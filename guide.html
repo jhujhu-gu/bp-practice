@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>參考資料｜商業簡報練習</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  .req { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media (max-width: 800px) { .req { grid-template-columns: 1fr; } }
+  .req .card { margin: 0; }
+  .req h3 { margin: 0 0 6px; font-size: 16px; color: var(--main); }
+  .req .how { background: #fafbfa; border-radius: 8px; padding: 8px 10px; font-size: 14px; margin-top: 6px; }
+  .req .how ol { margin: 4px 0 0; padding-left: 20px; }
+  .note { font-size: 13px; color: var(--warn); margin-top: 6px; }
+  .style2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; } @media (max-width: 800px) { .style2 { grid-template-columns: 1fr; } }
+  .style2 .card { margin: 0; } .style2 ul, .keys ul { padding-left: 20px; margin: 6px 0; } .style2 li, .keys li { margin: 4px 0; }
+  .chipbar { display: flex; height: 26px; border-radius: 6px; overflow: hidden; margin: 6px 0 10px; } .chipbar i { flex: 1; }
+</style>
+</head>
+<body>
+<header><h1>參考資料</h1><div class="row"><a class="btn" href="index.html" style="background:rgba(255,255,255,.15);color:#fff;border:0;text-decoration:none">回首頁</a></div></header>
+<main>
+  <div class="tabs" id="tabs"></div>
+  <div id="body"></div>
+</main>
+<script src="bank.js"></script>
+<script src="common.js"></script>
+<script>
+const FORMAT = [
+  { t: "檔案輸出與命名", d: "以<b>崗位編號</b>（往年稱選手證號碼）當檔名，存成 <b>簡報檔 .pptx、播放檔 .ppsx、PDF</b> 三種檔案，存完逐一打開測試。",
+    how: ["檔案 → 另存新檔，依序選 PowerPoint 簡報、PowerPoint 播放檔、PDF", "三個檔案都打開看一次：字型、圖片、動畫有沒有跑掉"],
+    note: "上傳給老師時請傳<b>簡報檔 .pptx</b>（PDF 看不到動畫）；全真模擬一定要練到三種檔案都存好並測試。" },
+  { t: "投影片母片", d: "題目都要求用「投影片母片」設計。從空白簡報開始，自己在母片裡建立，不使用內建佈景主題或範本。",
+    how: ["先打開參考線與格線（Alt＋F9、Shift＋F9）", "檢視 → 投影片母片", "照自己的風格卡建立封面、目錄、分隔頁、內文、結尾"] },
+  { t: "簡報目錄", d: "每年都要求呈現目錄，章節照題目要求；題目沒規定時，自己設定章節與排列順序。" },
+  { t: "總頁數", d: "依題目規定（近年多為 15～25 頁，也有 10～25 頁）。不符合規定會扣分，<b>封面、目錄、分隔頁、結尾都算頁數</b>。" },
+  { t: "日期與頁碼", d: "日期要能<b>自動更新</b>；頁碼依題目規定，近年多為「封面與分隔頁不顯示頁碼，其他頁都要有」。",
+    how: ["插入 → 頁首及頁尾：勾「日期及時間 → 自動更新」、勾「投影片編號」", "勾「標題投影片中不顯示」可以隱藏封面頁碼", "分隔頁：母片的分隔頁版面不放頁碼，或在該頁單獨取消勾選"],
+    note: "每年細節不同，一定要回頭看題目怎麼寫。" },
+  { t: "使用參考資料圖片", d: "題目會規定至少使用幾張參考資料圖片（3～6 張不等），沒達到會扣分。" },
+  { t: "壓縮圖片、刪除剪裁區域", d: "題目要求壓縮簡報中的圖片並刪除剪裁區域。<b>等所有內容和圖片都調整好、最後存檔前再做。</b>",
+    how: ["確認圖片都不會再放大、移動或重新裁切", "點任一張圖 → 圖片格式 → 壓縮圖片", "取消勾選「只套用到此圖片」，勾選「刪除圖片的剪裁區域」，解析度用預設即可", "接著存檔、輸出三種檔案"],
+    note: "太早做的話，之後想放大或重新裁切圖片，會變模糊或裁不回原本的範圍。" },
+  { t: "圖表四要素", d: "題目要求的圖表都要有：<b>圖表名稱、座標軸（含標題與單位）、圖例、資料標籤</b>。有些年份還會指定圖表類型不可重複。" },
+  { t: "指定的 SmartArt", d: "常考組織架構圖（部門、人數、職掌）與時間軸。題目寫「使用 SmartArt 圖形輔以其他工具」時，一定要用 SmartArt。" },
+  { t: "校對", d: "中文、英文、數據有錯，每處會扣 1～5 分。數字、公司名稱、專有名詞最後一定要再對一次題目。" },
+  { t: "不得出現個人資料", d: "簡報不能出現選手或指導老師的任何資料，否則視同舞弊、取消資格。" }
+];
+
+function format() {
+  $("#body").innerHTML = `<p class="muted">這些是每年都會出現的格式要求，也是每份練習都要做到的基本功。<b>考試時以當年題目的文字為準。</b></p>
+  <div class="req">${FORMAT.map((f, i) => `<div class="card"><h3>${i + 1}. ${f.t}</h3><div>${f.d}</div>
+    ${f.how ? `<div class="how"><b>怎麼做</b><ol>${f.how.map(h => `<li>${h}</li>`).join("")}</ol></div>` : ""}
+    ${f.note ? `<div class="note">${f.note}</div>` : ""}</div>`).join("")}</div>`;
+}
+
+function award() {
+  $("#body").innerHTML = `<p class="muted">以下整理自兩份得獎作品的觀察。兩份風格完全不同，但都做到同樣幾件事。</p>
+  <div class="card" style="background:#fff8e6;border-color:#f2d48a">💡 看得獎作品是為了學習<b>「為什麼這樣做有效」</b>，不是要照抄它的版面。請把觀察到的原則，用自己的巧思做出屬於自己的設計。</div>
+  <div class="style2">
+    <div class="card"><h2>風格一：每章一個顏色</h2><div class="chipbar"><i style="background:#E53935"></i><i style="background:#F07B2B"></i><i style="background:#F2B632"></i><i style="background:#3CC7A6"></i><i style="background:#29A9E8"></i></div>
+      <ul><li><b>目錄</b>是五條色帶，每章一個顏色，配上章節號與線條圖示。</li>
+      <li><b>分隔頁</b>用該章顏色滿版，疊上半透明照片、大線條圖示與章節名稱；內文頁的上下細線與導覽列也換成該章顏色——不用看頁碼就知道在哪一章。</li>
+      <li><b>內文頁</b>白底、標題置中，上方導覽列標出目前章節，右上日期與頁碼。</li>
+      <li>內容幾乎都<b>圖像化</b>：彩色圓角卡片時間軸、中心照片向外放射的需求分析、四色圓形 SWOT、客戶照片加「第一群」標籤、箭射靶心比喻預期效益。</li>
+      <li>只有關鍵頁加一條重點標語，其他頁靠版面本身傳達重點。</li></ul></div>
+    <div class="card"><h2>風格二：單一主色＋功能色</h2><div class="chipbar"><i style="background:#1F5BD8"></i><i style="background:#1F5BD8"></i><i style="background:#1F5BD8"></i><i style="background:#2BB673"></i><i style="background:#D7263D"></i></div>
+      <ul><li>全篇一個藍色主色，只在需要區分時用綠、紅等功能色（例如分群、優劣勢）。</li>
+      <li><b>封面</b>用 hashtag 標籤點出目的（例如「#會員忠誠度UP」）；<b>大綱</b>用斜切色塊；<b>分隔頁</b>是滿版圓角色塊配巨大章節號與子項目。</li>
+      <li>內文頁左上是章節號與章名，右上是小節導覽。</li>
+      <li>幾乎每頁標題下都有一條<b>重點標語</b>，結尾用一句話收束整份企劃。</li>
+      <li>關鍵數字放大放在色塊裡（例如市場規模、比率），一眼抓到重點。</li></ul></div>
+  </div>
+  <div class="card keys" style="margin-top:12px"><h2>兩份的共通點</h2><ol>
+    <li><b>一套一致的視覺系統：</b>封面、目錄、分隔頁、內文、結尾風格統一，章節辨識度高。</li>
+    <li><b>內容圖像化：</b>時間軸、卡片、圖示、圖表、比喻，取代整頁條列文字。</li>
+    <li><b>每頁先決定要讓評審看懂什麼，</b>再用顏色、大數字、標籤、比喻或重點標語凸顯——有沒有標語不是重點，重點有沒有傳達出來才是。</li>
+    <li><b>大量使用題目提供的照片，</b>用法統一（滿版轉場、圓形裁切、半透明疊色）。</li>
+    <li><b>用動畫帶視線：</b>元素依序出現，代替講者的說明順序。</li>
+    <li><b>內容緊扣題目要求：</b>分群判斷、預算、效益等題目要的每一項都清楚做出來。</li></ol></div>
+  <div class="card"><h2>做完一份練習後，拿來自我檢查</h2><div class="checklist">${[
+    "我的章節辨識夠清楚嗎？（顏色、分隔頁、導覽列）",
+    "有沒有整頁都是條列文字的頁面？能不能改成圖像化？",
+    "每一頁，不靠講解，評審看得出重點嗎？",
+    "最重要的數字或結果，有被放大或上色嗎？",
+    "題目的照片用夠了嗎？用法有一致嗎？"].map(x => `<label><input type="checkbox">${x}</label>`).join("")}</div></div>`;
+}
+
+
+const KEYS = [
+  { t: "基本操作", k: [["Ctrl＋C／V／X", "複製／貼上／剪下"], ["Ctrl＋Z", "復原"], ["Ctrl＋Y 或 F4", "<b>重複上一個動作</b>（例如再套一次同樣的顏色、對齊）"],
+    ["Ctrl＋D", "直接複製一份物件（再按一次會照同樣間距再複製）"], ["Ctrl＋Shift＋C／V", "複製格式／貼上格式（顏色、框線、字型一次套用）"],
+    ["Ctrl＋Alt＋V", "選擇性貼上（例如只貼文字、貼成圖片）"], ["Ctrl＋S", "存檔（養成隨手存檔的習慣）"], ["F12", "另存新檔"]] },
+  { t: "選取與群組", k: [["Shift＋點選", "一次選多個物件"], ["Ctrl＋A", "全選"], ["Tab", "依序切換選取下一個物件（物件重疊時很好用）"],
+    ["Ctrl＋G", "群組"], ["Ctrl＋Shift＋G", "取消群組"]] },
+  { t: "畫圖與移動", k: [["Shift＋拖曳畫圖", "畫出<b>正圓、正方形</b>；畫線時是水平、垂直或 45°"], ["Ctrl＋拖曳畫圖", "從中心點向外畫"],
+    ["Shift＋拖曳角落", "等比例縮放"], ["Ctrl＋拖曳物件", "拖出一份複製"], ["Shift＋拖曳物件", "只沿水平或垂直移動"],
+    ["方向鍵／Ctrl＋方向鍵", "微調位置／更細的微調"], ["Shift＋拖曳旋轉點", "每次轉 15°"], ["Alt＋拖曳", "暫時不貼齊格線，自由移動"]] },
+  { t: "文字", k: [["Ctrl＋E", "置中"], ["Ctrl＋L／R", "靠左／靠右"], ["Ctrl＋J", "左右對齊"], ["Ctrl＋B／I／U", "粗體／斜體／底線"],
+    ["Ctrl＋Shift＋＞ 或 ＜", "字放大／縮小"], ["Shift＋F3", "英文大小寫切換"]] },
+  { t: "檢視與播放", k: [["F5", "從第一頁播放"], ["Shift＋F5", "從目前這頁播放"], ["Alt＋F9", "顯示／隱藏參考線"], ["Shift＋F9", "顯示／隱藏格線"],
+    ["Ctrl＋滑鼠滾輪", "放大／縮小編輯畫面"]] }
+];
+const TIPS = [
+  ["<b>一開始就打開參考線與格線：</b>開始設計簡報時，先到「檢視」勾選參考線、格線（Alt＋F9、Shift＋F9）。物件都對著線放，版面自然整齊，母片的位置也容易記。"],
+  ["<b>大小直接打數字：</b>選取物件 → 圖形格式 → 大小，直接輸入「高度、寬度」；要等比例就勾「鎖定長寬比」。比用滑鼠拉準確，也最容易背。"],
+  ["<b>位置直接打數字：</b>物件按右鍵 → 大小及位置 → 位置，輸入水平、垂直的數值。母片元素的位置記成數字，重製時才會一模一樣。"],
+  ["<b>對齊與均分：</b>選多個物件 → 圖形格式 → 對齊：靠左、水平置中、垂直置中、水平均分、垂直均分。對齊前先想好要「對齊投影片」還是「對齊選取的物件」。"],
+  ["<b>把常用功能放到快速存取工具列：</b>在「對齊」「群組」「滴管」等按鈕上按右鍵 → 新增至快速存取工具列，之後按 <b>Alt＋數字</b> 就能直接使用，比一層層點選單快很多。"],
+  ["<b>滴管：</b>填滿或字型色彩 → 滴管，可以吸投影片上或畫面外色票圈的顏色；按住滑鼠拖曳還能吸到視窗外的顏色。"]
+];
+function keys() {
+  $("#body").innerHTML = `<p class="muted">以 Windows 版 PowerPoint 為準（Mac 把 Ctrl 換成 Cmd）。需要時點開看，平常練習時刻意多用，練到不用想就按得出來。</p>
+    <div class="req">${KEYS.map(g => `<div class="card"><h3>${g.t}</h3><table class="tbl">${g.k.map(([a, b]) => `<tr><td style="white-space:nowrap"><b>${a}</b></td><td>${b}</td></tr>`).join("")}</table></div>`).join("")}</div>
+    <div class="card" style="margin-top:12px"><h2>不是快捷鍵，但很省時間</h2><ul>${TIPS.map(t => `<li style="margin:6px 0">${t[0]}</li>`).join("")}</ul></div>`;
+}
+
+let TAB = ["#award", "#keys"].includes(location.hash) ? location.hash.slice(1) : "format";
+function render() {
+  $("#tabs").innerHTML = [["format", "每年必有的格式要求"], ["keys", "常用快捷鍵"], ["award", "得獎作品觀察"]].map(([k, n]) => `<button data-t="${k}" class="${TAB === k ? "on" : ""}">${n}</button>`).join("");
+  $$("[data-t]").forEach(b => b.onclick = () => { TAB = b.dataset.t; render(); window.scrollTo(0, 0); });
+  ({ format, keys, award })[TAB]();
+}
+render();
+</script>
+</body>
+</html>

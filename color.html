@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>配色與母片設計｜商業簡報練習</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  main { max-width: 1180px; }
+  .layout { display: grid; grid-template-columns: 300px 1fr; gap: 14px; align-items: start; }
+  @media (max-width: 900px) { .layout { grid-template-columns: 1fr; } }
+  .slides { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media (max-width: 640px) { .slides { grid-template-columns: 1fr; } }
+  .slide { border-radius: 10px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,.12); background: #fff; }
+  .slide svg { display: block; width: 100%; height: auto; }
+  .cap { font-size: 13px; color: var(--muted); margin: 4px 2px 0; }
+  .pick-row { display: grid; grid-template-columns: 46px 1fr; gap: 8px; align-items: center; margin: 8px 0; }
+  .pick-row input[type=color] { width: 46px; height: 40px; padding: 2px; }
+  .pick-row .lab { font-size: 13px; color: var(--muted); grid-column: 1 / -1; margin-bottom: -6px; }
+  .sw { display: flex; border-radius: 10px; overflow: hidden; height: 46px; margin: 6px 0; border: 1px solid #d9dedc; }
+  .sw i { flex: 1; } .sw.small { height: 26px; }
+  .swlabel { display: flex; font-size: 12px; color: var(--muted); } .swlabel span { flex: 1; text-align: center; }
+  .ratio { display: flex; height: 40px; border-radius: 10px; overflow: hidden; font-size: 13px; color: #fff; }
+  .ratio div { display: grid; place-items: center; }
+  .ck { display: flex; justify-content: space-between; font-size: 14px; padding: 5px 0; border-bottom: 1px dashed var(--line); }
+  .presets { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 8px; }
+  .preset { text-align: left; padding: 8px 10px; }
+  .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 14px; }
+  .gcard ol { padding-left: 20px; font-size: 14px; margin: 6px 0 0; }
+  .textdemo { border-radius: 10px; padding: 10px 14px; margin: 6px 0; display: flex; justify-content: space-between; align-items: center; }
+  .rel h3 { margin-top: 10px; }
+  .wheel { position: relative; margin: 6px auto; border-radius: 50%; touch-action: none;
+    background: radial-gradient(circle closest-side, hsl(0 0% 50%), rgba(128,128,128,0)), conic-gradient(hsl(0 90% 50%), hsl(60 90% 50%), hsl(120 90% 50%), hsl(180 90% 50%), hsl(240 90% 50%), hsl(300 90% 50%), hsl(360 90% 50%)); }
+  .hd { position: absolute; width: 34px; height: 34px; margin: -17px 0 0 -17px; border-radius: 50%; border: 3px solid #fff; box-shadow: 0 1px 6px rgba(0,0,0,.4);
+    display: grid; place-items: center; font-size: 13px; font-weight: 700; cursor: grab; touch-action: none; }
+  .hd.on { width: 42px; height: 42px; margin: -21px 0 0 -21px; border-color: #222; }
+  .modes { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; } .modes button { text-align: left; white-space: normal; padding: 6px 10px; }
+  .modes button.on { border-color: var(--main); background: var(--main-2); }
+  .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; } .bigsw { height: 60px; border-radius: 10px; margin-bottom: 6px; border: 1px solid #e3e3e3; }
+  .objcols { display: grid; grid-template-columns: repeat(auto-fit, minmax(90px, 1fr)); gap: 8px; }
+  .objc { display: block !important; margin: 0 !important; color: var(--ink) !important; border: 1px solid var(--line); border-radius: 10px; padding: 6px; cursor: pointer; }
+  .objc.on { border-color: var(--main); background: var(--main-2); }
+  .colrow { display: grid; grid-template-columns: 46px 1fr auto auto; gap: 6px; align-items: center; margin: 6px 0; }
+  .colrow input[type=color] { width: 46px; height: 38px; padding: 2px; } .colrow .accl { display: flex; gap: 4px; align-items: center; font-size: 13px; margin: 0; color: var(--ink); white-space: nowrap; }
+  .colrow .accl input { width: auto; }
+  .opts { display: grid; gap: 6px; } .opt { display: flex !important; gap: 10px; align-items: center; border: 1px solid var(--line); border-radius: 10px; padding: 6px 8px; color: var(--ink) !important; cursor: pointer; margin: 0 !important; }
+  .opt.on { border-color: var(--main); background: var(--main-2); } .opt input { width: auto; } .opt .mini { width: 96px; flex: none; border-radius: 6px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,.15); } .opt .mini svg { display: block; width: 100%; height: auto; }
+  .steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; } @media (max-width: 900px) { .steps { grid-template-columns: 1fr 1fr; } } @media (max-width: 560px) { .steps { grid-template-columns: 1fr; } }
+  .stp { border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; } .stp textarea, .stp input { margin: 6px 0; }
+  .ref { background: #fff8e6; border: 1px solid #f2d48a; border-radius: 10px; padding: 10px 14px; margin-bottom: 12px; font-size: 14px; }
+  .rtbl input { min-width: 110px; padding: 5px 7px; font-size: 13px; } .rtbl td { padding: 4px 3px; } .rtbl td:first-child input { min-width: 170px; }
+  .rin.blur { color: transparent; text-shadow: 0 0 8px rgba(0,0,0,.45); background: #f3f4f3; }
+  .spec { border: 1px dashed var(--main); border-radius: 10px; padding: 10px 12px; background: #fbfdfc; } .spec ul { padding-left: 18px; margin: 6px 0 0; }
+</style>
+</head>
+<body>
+<header><h1>配色與母片設計</h1><div class="row"><a class="btn" href="index.html" style="background:rgba(255,255,255,.15);color:#fff;border:0;text-decoration:none">回首頁</a></div></header>
+<main>
+  <div class="tabs" id="tabs"></div>
+  <div id="body"></div>
+</main>
+<script src="bank.js"></script>
+<script src="common.js"></script>
+<script>
+/* ---------------- 色彩工具 ---------------- */
+const hex2rgb = h => { h = h.replace("#", ""); if (h.length === 3) h = h.split("").map(x => x + x).join(""); return [0, 2, 4].map(i => parseInt(h.substr(i, 2), 16)); };
+const rgb2hex = a => "#" + a.map(v => Math.round(Math.max(0, Math.min(255, v))).toString(16).padStart(2, "0")).join("").toUpperCase();
+const mix = (a, b, t) => rgb2hex(hex2rgb(a).map((v, i) => v + (hex2rgb(b)[i] - v) * t));
+function rgb2hsl([r, g, b]) { r /= 255; g /= 255; b /= 255; const mx = Math.max(r, g, b), mn = Math.min(r, g, b); let h = 0, s = 0, l = (mx + mn) / 2;
+  if (mx !== mn) { const d = mx - mn; s = l > .5 ? d / (2 - mx - mn) : d / (mx + mn);
+    h = mx === r ? (g - b) / d + (g < b ? 6 : 0) : mx === g ? (b - r) / d + 2 : (r - g) / d + 4; h *= 60; } return [h, s, l]; }
+function hsl2hex(h, s, l) { h = ((h % 360) + 360) % 360; const c = (1 - Math.abs(2 * l - 1)) * s, x = c * (1 - Math.abs((h / 60) % 2 - 1)), m = l - c / 2;
+  const [r, g, b] = h < 60 ? [c, x, 0] : h < 120 ? [x, c, 0] : h < 180 ? [0, c, x] : h < 240 ? [0, x, c] : h < 300 ? [x, 0, c] : [c, 0, x];
+  return rgb2hex([r, g, b].map(v => (v + m) * 255)); }
+const rot = (hex, deg) => { const [h, s, l] = rgb2hsl(hex2rgb(hex)); return hsl2hex(h + deg, s, l); };
+const vivid = (hex, deg) => { const [h, s] = rgb2hsl(hex2rgb(hex)); const hh = ((h + deg) % 360 + 360) % 360;
+  const sat = hh > 260 && hh < 335 ? .5 : Math.min(Math.max(s, .62), .74);
+  return hsl2hex(hh, sat, hh > 40 && hh < 75 ? .55 : hh > 75 && hh < 170 ? .44 : hh > 260 && hh < 335 ? .55 : .53); };
+const light = (hex, l) => { const [h, s] = rgb2hsl(hex2rgb(hex)); return hsl2hex(h, s, l); };
+function lum(hex) { return hex2rgb(hex).map(v => { v /= 255; return v <= .03928 ? v / 12.92 : ((v + .055) / 1.055) ** 2.4; })
+  .reduce((a, v, i) => a + v * [.2126, .7152, .0722][i], 0); }
+const contrast = (a, b) => { const [x, y] = [lum(a), lum(b)].sort((p, q) => q - p); return (x + .05) / (y + .05); };
+// 物件色當文字時，若和背景對比不夠，自動調深（或深色背景時調淺）到看得清楚
+function readable(col, bg, need = 3.2) {
+  let [h, sa, l] = rgb2hsl(hex2rgb(col)); const dark = lum(bg) > .4;
+  let out = col;
+  if (dark && contrast(col, bg) < need && h > 42 && h < 85) { h = 38; sa = Math.max(sa, .85); }   // 黃、黃綠調深會變土黃，改往深金黃調
+  for (let i = 0; i < 40 && contrast(out, bg) < need; i++) { l = dark ? l - .02 : l + .02; out = hsl2hex(h, sa, Math.max(0, Math.min(1, l))); }
+  return out;
+}
+const bestText = bg => contrast(bg, "#FFFFFF") >= contrast(bg, "#222222") ? "#FFFFFF" : "#222222";
+
+
+/* ---------------- 狀態 ---------------- */
+const NEUTRAL = { bg: "#FFFFFF", text: "#2B2B2B", text2: "#6B7280" };
+// 配色方案＝背景與文字（bg, text, text2）＋物件色彩 colors[]（3～5 色，colors[0] 是主色，colors[acc] 是強調色）
+function normPal(p) {
+  p = { ...NEUTRAL, ...(p || {}) };
+  let colors = Array.isArray(p.colors) && p.colors.length ? p.colors.slice() : [p.main || "#1F5BD8", p.sub || "#38BDF8", p.accent || "#E53935"];
+  let acc = Array.isArray(p.colors) && p.colors.length ? p.acc : 2;
+  if (acc === undefined || acc === null || acc >= colors.length) acc = colors.length - 1;
+  const others = colors.filter((_, i) => i !== 0 && i !== acc);
+  return { bg: p.bg, text: p.text, text2: p.text2, colors, acc, main: colors[0], accent: colors[acc], sub: others[0] || colors[0] };
+}
+let P = normPal(store("bp_palette") || { colors: ["#1F5BD8", "#38BDF8", "#E53935"], acc: 2 });
+const savePal = () => { P = normPal(P); store("bp_palette", P); };
+const colorName = (i, p = P) => i === 0 ? "主色" : i === p.acc ? "強調色" : "色彩 " + (i + 1);
+const palAll = p => { p = normPal(p); return [p.bg, p.text, p.text2, ...p.colors]; };
+let ST = store("bp_style") || { name: "", shape: "slant", font: "jh" };
+let SAVED = store("bp_palettes") || [];
+let TAB = "learn";
+let PROG = null;           // 選手練習紀錄（母片養成進度用）
+const ME = store("bp_me");
+const derived = (p = P) => { p = normPal(p); return { ...p, soft: mix(p.main, p.bg, .88), ink: p.text, gray: p.text2 }; };
+
+const SHAPES = [
+  { k: "slant", n: "斜切", d: "平行四邊形、梯形，有速度感與現代感" },
+  { k: "round", n: "圓弧", d: "正圓、圓角，親切、柔和" },
+  { k: "block", n: "方塊", d: "矩形色塊、網格，穩重、條理分明" },
+  { k: "line", n: "線條", d: "細線、留白，簡約、專業" }
+];
+const FONTS = [
+  { k: "jh", n: "微軟正黑體＋Arial", d: "最穩，比賽電腦一定有", t: "'Microsoft JhengHei','Noto Sans TC',sans-serif", b: "'Microsoft JhengHei','Noto Sans TC',sans-serif" },
+  { k: "jhs", n: "微軟正黑體＋Segoe UI", d: "英文數字較現代", t: "'Microsoft JhengHei','Noto Sans TC',sans-serif", b: "'Segoe UI','Microsoft JhengHei','Noto Sans TC',sans-serif" },
+  { k: "kai", n: "標楷體標題＋微軟正黑體內文", d: "人文、文化類題目", t: "'DFKai-SB','BiauKai','KaiTi','Noto Serif CJK TC',serif", b: "'Microsoft JhengHei','Noto Sans TC',sans-serif" }
+];
+const fontOf = () => FONTS.find(f => f.k === ST.font) || FONTS[0];
+
+const PRESETS = [
+  { n: "清爽科技藍（3 色）", bg: "#FFFFFF", text: "#1F2933", text2: "#6B7280", colors: ["#1F5BD8", "#38BDF8", "#FF9F1C"], acc: 2 },
+  { n: "每章一色（5 色）", bg: "#FFFFFF", text: "#222222", text2: "#6B7280", colors: ["#E53935", "#F07B2B", "#F2B632", "#3CC7A6", "#29A9E8"], acc: 0 },
+  { n: "活力橘（3 色）", bg: "#FFFFFF", text: "#222222", text2: "#6B7280", colors: ["#F26B21", "#FFB703", "#1F8FCC"], acc: 2 },
+  { n: "單一主色＋功能色（4 色）", bg: "#FFFFFF", text: "#1E293B", text2: "#64748B", colors: ["#1F5BD8", "#2BB673", "#F59E0B", "#D7263D"], acc: 3 },
+  { n: "清新綠（4 色）", bg: "#FFFFFF", text: "#1F2D25", text2: "#64748B", colors: ["#2BB673", "#3B82F6", "#FFB400", "#F2545B"], acc: 3 },
+  { n: "熱情紅（3 色）", bg: "#FFFFFF", text: "#222222", text2: "#6B7280", colors: ["#E63946", "#2A9D8F", "#F4A261"], acc: 2 },
+  { n: "年輕紫粉（4 色）", bg: "#FFFFFF", text: "#2A2140", text2: "#6B6880", colors: ["#7C3AED", "#EC4899", "#22D3EE", "#FACC15"], acc: 3 },
+  { n: "柔和底色＋鮮明重點（4 色）", bg: "#FAF8F5", text: "#2F2F2F", text2: "#6E6A66", colors: ["#3A7CA5", "#81B29A", "#F2CC8F", "#E07A5F"], acc: 3 },
+  { n: "深色背景・亮色點綴", bg: "#0F1B2D", text: "#F2F5F9", text2: "#A9B4C2", colors: ["#3B82F6", "#22D3EE", "#FACC15"], acc: 2 }
+];
+
+
+/* ---------------- 投影片模擬（只用基本圖形，四種形狀語言） ---------------- */
+function T(x, y, txt, size, fill, w = 700, anchor = "start", fam) {
+  const f = fam || fontOf().b;
+  return `<text x="${x}" y="${y}" font-size="${size}" font-weight="${w}" fill="${fill}" text-anchor="${anchor}" style="font-family:${f}">${txt}</text>`; }
+const TT = (x, y, txt, size, fill, w = 700, anchor = "start") => T(x, y, txt, size, fill, w, anchor, fontOf().t);
+
+function badge(st, cx, cy, r, fill, label, c) {
+  const fg = bestText(fill);
+  const shape = st === "round" ? `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${fill}"/>`
+    : st === "block" ? `<rect x="${cx - r}" y="${cy - r}" width="${r * 2}" height="${r * 2}" fill="${fill}"/>`
+    : st === "slant" ? `<polygon points="${cx - r + 6},${cy - r} ${cx + r + 6},${cy - r} ${cx + r - 6},${cy + r} ${cx - r - 6},${cy + r}" fill="${fill}"/>`
+    : `<rect x="${cx - r}" y="${cy + r - 3}" width="${r * 2}" height="3" fill="${fill}"/>`;
+  return shape + T(cx, cy + 5, label, 14, st === "line" ? readable(fill, c.bg) : fg, 700, "middle");
+}
+
+function slide(type, c, st = ST.shape) {
+  const W = 640, H = 360; let g = `<rect width="${W}" height="${H}" fill="${c.bg}"/>`;
+  const onMain = bestText(c.main);
+  const cols = c.colors || [c.main, c.sub, c.accent], multi = cols.length >= 4;   // 4 色以上：每章一色
+  const chap = i => multi ? cols[i % cols.length] : null;
+  const secC = multi ? chap(2) : c.main, onSec = bestText(secC);
+  if (type === "cover" || type === "end") {
+    const t1 = type === "cover" ? "動感生活健身俱樂部" : "感謝聆聽", t2 = type === "cover" ? "會員忠誠度提升行銷策略" : "敬請指教";
+    if (st === "slant") g += `<polygon points="0,0 380,0 300,${H} 0,${H}" fill="${c.main}"/><polygon points="380,0 410,0 330,${H} 300,${H}" fill="${c.accent}"/>
+      <circle cx="560" cy="80" r="70" fill="${c.sub}" opacity=".25"/>`;
+    if (st === "round") g += `<circle cx="130" cy="180" r="270" fill="${c.main}"/><circle cx="520" cy="300" r="110" fill="${c.sub}" opacity=".35"/><circle cx="430" cy="70" r="22" fill="${c.accent}"/>`;
+    if (st === "block") g += `<rect width="390" height="${H}" fill="${c.main}"/><rect x="410" y="20" width="210" height="150" fill="${c.sub}"/>
+      <rect x="410" y="190" width="100" height="150" fill="${c.soft}"/><rect x="520" y="190" width="100" height="150" fill="${c.accent}"/>`;
+    if (st === "line") g += `<rect x="40" y="40" width="560" height="2" fill="${c.main}"/><rect x="40" y="318" width="560" height="2" fill="${c.main}"/>
+      <rect x="40" y="118" width="8" height="90" fill="${c.accent}"/>`;
+    const tc = st === "line" ? readable(c.main, c.bg) : onMain, x = st === "line" ? 66 : 40;
+    g += TT(x, 160, t1, 30, tc) + T(x, 198, t2, 18, st === "line" ? c.ink : onMain, 500);
+    if (st !== "line") g += `<rect x="${x}" y="215" width="60" height="5" fill="${c.accent}"/>`;
+    if (type === "cover") g += T(x, 300, "區域營運部｜董事會簡報", 12, st === "line" ? c.gray : onMain, 400);
+  } else if (type === "toc") {
+    const items = ["公司簡介", "市場現況", "客群分析", "行銷方案", "預算與效益"];
+    let x0 = 262;
+    if (st === "slant") g += `<polygon points="0,0 210,0 170,${H} 0,${H}" fill="${c.main}"/>`;
+    if (st === "round") g += `<circle cx="40" cy="180" r="190" fill="${c.main}"/>`;
+    if (st === "block") g += `<rect width="200" height="${H}" fill="${c.main}"/><rect x="200" width="12" height="${H}" fill="${c.accent}"/>`;
+    if (st === "line") { g += `<rect x="40" y="96" width="140" height="2" fill="${c.main}"/>`; }
+    const tc = st === "line" ? readable(c.main, c.bg) : onMain;
+    g += TT(30, 70 + (st === "line" ? 0 : 80), "目錄", 34, tc) + T(30, 98 + (st === "line" ? 22 : 80), "CONTENTS", 13, st === "line" ? c.gray : onMain, 400);
+    items.forEach((t, i) => { const y = 62 + i * 58;
+      g += badge(st, x0, y, 17, multi ? chap(i) : i === 2 ? c.accent : c.sub, "0" + (i + 1), c) + T(x0 + 34, y + 7, t, 18, c.ink, i === 2 ? 700 : 500)
+        + `<rect x="${x0 + 34}" y="${y + 18}" width="290" height="1.5" fill="${c.soft}"/>`; });
+  } else if (type === "section") {
+    if (st === "line") {
+      const secT = readable(secC, c.bg);
+      g += T(60, 190, "03", 120, mix(secT, c.bg, .55), 800) + `<rect x="60" y="214" width="520" height="3" fill="${secC}"/>`
+        + TT(60, 260, "客群分析", 32, secT) + T(60, 292, "誰是我們最該留住的會員？", 15, c.ink, 400);
+    } else {
+      const deco = multi ? "#FFFFFF" : c.sub, hi = multi ? onSec : c.accent;
+      g += `<rect width="${W}" height="${H}" fill="${secC}"/>`;
+      if (st === "slant") g += `<polygon points="430,0 640,0 640,${H} 330,${H}" fill="${deco}" opacity=".3"/><polygon points="400,0 420,0 320,${H} 300,${H}" fill="${hi}"/>`;
+      if (st === "round") g += `<circle cx="520" cy="180" r="170" fill="${deco}" opacity=".3"/><circle cx="560" cy="120" r="80" fill="${deco}" opacity=".3"/>`;
+      if (st === "block") for (let i = 0; i < 3; i++) for (let j = 0; j < 4; j++)
+        g += `<rect x="${400 + i * 76}" y="${20 + j * 82}" width="66" height="72" fill="${deco}" opacity="${(i + j) % 3 === 0 ? .5 : .18}"/>`;
+      g += T(60, 170, "03", 80, hi, 800) + TT(60, 230, "客群分析", 34, onSec)
+        + `<rect x="60" y="250" width="70" height="5" fill="${hi}"/>` + T(60, 285, "誰是我們最該留住的會員？", 15, onSec, 400);
+    }
+  } else {
+    const bars = [62, 48, 85, 40], lab = ["第一群", "第二群", "第三群", "第四群"], tabs = ["公司簡介", "市場現況", "客群分析", "行銷方案"];
+    g += `<rect width="${W}" height="6" fill="${secC}"/>`;
+    tabs.forEach((t, i) => { const x = 330 + i * 76, on = i === 2;
+      if (st === "round") g += `<rect x="${x}" y="18" width="70" height="22" rx="11" fill="${on ? secC : c.soft}"/>`;
+      if (st === "block") g += `<rect x="${x}" y="18" width="70" height="22" fill="${on ? secC : c.soft}"/>`;
+      if (st === "slant") g += `<polygon points="${x + 6},18 ${x + 74},18 ${x + 64},40 ${x - 4},40" fill="${on ? secC : c.soft}"/>`;
+      if (st === "line" && on) g += `<rect x="${x}" y="38" width="70" height="3" fill="${secC}"/>`;
+      g += T(x + 35, 33, t, 11, on && st !== "line" ? onSec : c.ink, on ? 700 : 500, "middle"); });
+    g += TT(30, 80, "客戶分群分析", 22, c.ink) + `<rect x="30" y="92" width="50" height="4" fill="${c.accent}"/>`;
+    bars.forEach((v, i) => g += `<rect x="${50 + i * 75}" y="${300 - v * 2}" width="46" height="${v * 2}" fill="${i === 2 ? c.accent : multi ? mix(cols[(i + 1) % cols.length], c.bg, .15) : c.sub}" ${st === "round" ? 'rx="6"' : ""}/>`
+      + T(73 + i * 75, 316, lab[i], 11, c.gray, 500, "middle") + T(73 + i * 75, 292 - v * 2, v, 12, c.ink, 700, "middle"));
+    g += `<rect x="30" y="300" width="300" height="1.5" fill="${c.gray}"/>`
+      + (st === "line" ? `<rect x="370" y="110" width="240" height="1.5" fill="${c.main}"/><rect x="370" y="298" width="240" height="1.5" fill="${c.main}"/>`
+        : `<rect x="370" y="110" width="240" height="190" ${st === "round" ? 'rx="14"' : ""} fill="${c.soft}"/><rect x="370" y="110" width="6" height="190" fill="${c.main}"/>`)
+      + T(392, 142, "重點", 15, readable(secC, c.soft)) + T(392, 172, "・兩年內平均消費最高", 13, c.ink, 400) + T(392, 198, "・進館頻率每週 1 次以上", 13, c.ink, 400)
+      + T(392, 224, "・流失風險低、黏著度高", 13, c.ink, 400) + T(608, 345, "7", 12, c.gray, 500, "end") + T(30, 345, "2026/12/02", 11, c.gray, 400);
+  }
+  return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">${g}</svg>`;
+}
+
+/* ---------------- 圖形範例 ---------------- */
+function demo(i, c) {
+  const W = 640, H = 360; let g = `<rect width="${W}" height="${H}" fill="#FFFFFF"/>`;
+  if (i === 0) g += `<polygon points="0,0 420,0 320,${H} 0,${H}" fill="${c.main}"/><polygon points="420,0 470,0 370,${H} 320,${H}" fill="${c.sub}"/>
+      <polygon points="470,0 485,0 385,${H} 370,${H}" fill="${c.accent}"/>${T(40, 190, "斜切色塊封面", 30, bestText(c.main))}`;
+  if (i === 1) g += `<circle cx="250" cy="180" r="120" fill="${c.main}" opacity=".85"/><circle cx="390" cy="180" r="120" fill="${c.sub}" opacity=".7"/>
+      ${T(200, 186, "優勢", 22, bestText(c.main), 700, "middle")}${T(440, 186, "機會", 22, bestText(c.sub), 700, "middle")}${T(320, 186, "交集", 16, "#fff", 700, "middle")}`;
+  if (i === 2) g += [0, 1, 2].map(k => `<rect x="${40 + k * 195}" y="70" width="170" height="220" rx="14" fill="${mix(c.main, "#fff", .9)}"/>
+      <circle cx="${125 + k * 195}" cy="70" r="26" fill="${k === 1 ? c.accent : c.main}"/>${T(125 + k * 195, 78, "0" + (k + 1), 18, "#fff", 700, "middle")}
+      ${T(125 + k * 195, 150, ["目標", "做法", "效益"][k], 22, c.main, 700, "middle")}<rect x="${85 + k * 195}" y="170" width="80" height="3" fill="${c.accent}"/>`).join("");
+  if (i === 3) g += `<rect x="0" y="150" width="${W}" height="60" fill="${c.accent}"/>${T(560, 140, "背景色帶", 13, c.gray, 500, "middle")}<path d="M120 60 H520 V300 H120 Z M320 120 a60 60 0 1 0 0.1 0 Z" fill="${c.main}" fill-rule="evenodd"/>
+      ${T(320, 340, "矩形「減去」圓形 = 鏤空框，透出後面的色帶", 16, c.ink, 500, "middle")}`;
+  if (i === 4) g += ["調查", "規劃", "執行", "評估"].map((t, k) => { const x = 30 + k * 150, f = [c.main, mix(c.main, c.sub, .5), c.sub, c.accent][k];
+      return `<polygon points="${x},130 ${x + 135},130 ${x + 165},180 ${x + 135},230 ${x},230 ${x + 30},180" fill="${f}"/>${T(x + 82, 188, t, 20, bestText(f), 700, "middle")}`; }).join("");
+  if (i === 5) g += `<rect width="${W}" height="8" fill="${c.main}"/>${["簡介", "現況", "分析", "方案", "效益"].map((t, k) =>
+      `<rect x="${200 + k * 86}" y="26" width="78" height="28" rx="14" fill="${k === 2 ? c.main : mix(c.main, "#fff", .88)}"/>${T(239 + k * 86, 45, t, 13, k === 2 ? "#fff" : c.ink, 500, "middle")}`).join("")}
+      <rect x="30" y="26" width="10" height="28" fill="${c.accent}"/>${T(50, 47, "客群分析", 18, c.ink)}<rect x="30" y="70" width="580" height="1.5" fill="${mix(c.main, "#fff", .7)}"/>
+      ${T(320, 210, "頁首導覽列：讓評審知道現在在哪一章", 16, c.ink, 500, "middle")}`;
+  return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">${g}</svg>`;
+}
+const DEMOS = [
+  { t: "斜切色塊封面", s: ["插入 → 圖案 → 平行四邊形（或梯形），拉滿左半邊", "複製兩個，縮窄後改成輔色、強調色，疊在右側邊緣", "Shift＋方向鍵微調位置，三塊斜度要一致"] },
+  { t: "圓形重疊＋透明度", s: ["畫兩個同尺寸的正圓（按住 Shift）", "右鍵 → 設定圖案格式 → 填滿 → 透明度 15–30%", "對齊 → 垂直置中，重疊處自然產生第三種顏色"] },
+  { t: "圓角卡片＋編號圓", s: ["圓角矩形填主色的淺色（佈景主題色的淺色 80%）", "正圓壓在卡片上緣中央，放編號", "三張卡片選取後 → 對齊 → 水平均分"] },
+  { t: "合併圖形做鏤空框", s: ["先畫矩形，再畫圓形放在上面", "先點矩形、再按 Shift 點圓形", "圖形格式 → 合併圖案 → 減去（選取順序決定保留誰）"] },
+  { t: "箭頭流程（V 形）", s: ["插入 → 圖案 → 箭號圖說中的「V 形箭號」", "Ctrl＋D 複製 3 個，間距用「水平均分」", "顏色由主色漸變到強調色，代表流程推進"] },
+  { t: "頁首導覽列", s: ["在母片頂端放細長矩形（主色）", "用圓角矩形做章節標籤，目前章節填主色、其他填淺色", "每章的版面配置各做一個，套用時就不用手動改"] }
+];
+
+
+function swatches(list, small) {
+  return `<div class="sw ${small ? "small" : ""}">${list.map(c => `<i style="background:${c}" title="${c}"></i>`).join("")}</div>`;
+}
+
+function learn() {
+  const c = derived();
+  const mono = [.25, .38, .5, .68, .85].map(l => light(c.main, l));
+  const ana = [-30, 0, 30].map(d => vivid(c.main, d));
+  const comp = [vivid(c.main, 0), vivid(c.main, 180)];
+  const split = [vivid(c.main, 0), vivid(c.main, 150), vivid(c.main, 210)];
+  const evenRaw = [0, 72, 144, 216, 288].map(d => hsl2hex(rgb2hsl(hex2rgb(c.main))[0] + d, .75, .5));
+  const even = ["#E8483F", "#F28C28", "#F5B82E", "#2EB8A0", "#2D9CDB"];
+  const rows = [[c.bg, c.text, "背景＋主文字"], [c.bg, c.text2, "背景＋次要文字"],
+    ...c.colors.map((h, i) => [c.bg, h, `背景＋${colorName(i, c)}當小標題`]),
+    [c.main, bestText(c.main), "主色色塊＋文字"], [c.soft, c.text, "淺色底＋主文字"]];
+  const sw2 = (list, names) => `${swatches(list)}<div class="swlabel">${names.map(n => `<span>${n}</span>`).join("")}</div>`;
+  $("#body").innerHTML = `
+  <div class="card"><h2>1. 色彩基礎：色相、明度、彩度</h2>
+    <p>每個顏色都由三個屬性決定。挑色時不只看「什麼顏色」，還要看「多亮、多鮮豔」。</p>
+    <div class="grid2">
+      <div><h3>色相（什麼顏色）</h3>${swatches([0, 30, 55, 120, 190, 220, 280, 330].map(h => hsl2hex(h, .6, .52)))}<p class="small">紅、橘、黃、綠、藍、紫……色環上的位置。色彩關係（互補、類似色）講的就是色相。</p></div>
+      <div><h3>明度（多亮、多暗）</h3>${swatches([.18, .3, .42, .55, .68, .8, .9].map(l => light(c.main, l)))}<p class="small">加白變亮、加黑變暗。明度差越大，對比越強；文字和背景要有足夠的明度差才看得清楚。</p></div>
+      <div><h3>彩度（多鮮豔、多灰）</h3>${swatches([.08, .2, .35, .5, .65, .8, 1].map(x => { const [h] = rgb2hsl(hex2rgb(c.main)); return hsl2hex(h, x, .5); }))}<p class="small">彩度越高越鮮豔、越搶眼；越低越灰、越沉穩。同一個色相，彩度不同，感覺完全不一樣。</p></div>
+      <div><h3>莫蘭迪色系（加了灰的柔和色）</h3>${swatches(["#7B8FA1", "#C9A9A6", "#A3B18A", "#D4A373", "#B5A8C4"])}<p class="small">在顏色裡加入灰色、<b>降低彩度</b>，看起來柔和、耐看。<b class="warn">但比賽作品不建議整份用偏灰的色系</b>——太灰會顯得沉悶、不吸睛。頂多拿來當大面積的底色或輔助色，主色與強調色還是要選鮮明的顏色。</p></div>
+    </div>
+    <h3>眼睛舒適度與整體和諧</h3>
+    <ul class="small">
+      <li><b>越亮、越鮮豔的顏色，面積要越小。</b>高彩度的顏色適合點綴（重點數字、圖示、細線）；大面積色塊、分隔頁滿版色，稍微降低彩度或明度，看久了眼睛才不會累。</li>
+      <li><b>避免直接用純色</b>（例如 #FF0000 正紅、#00FF00 正綠），投影出來很刺眼。微微加一點灰或調暗，就會舒服很多。</li>
+      <li><b>同一組配色的彩度、明度盡量接近</b>，整體才和諧；只讓強調色跳出來。</li>
+      <li><b>比賽作品要吸睛：</b>得獎作品的顏色多半是「鮮明但不刺眼」，不暗沉、不偏灰，也不是螢光色。<b>太灰、太暗或太刺眼都不適合</b>，鮮明又舒服的配色最討喜。</li>
+    </ul>
+    <div class="grid3" style="grid-template-columns:repeat(3,1fr)"><div><p class="small"><b>✗ 太刺眼：</b>純色、彩度拉到最高</p>${swatches(["#FF0000", "#00FF00", "#0000FF", "#FFFF00", "#FF00FF"])}</div>
+      <div><p class="small"><b>✗ 太灰：</b>舒服但沉悶、不吸睛</p>${swatches(["#8C9AA6", "#B8A9A7", "#9FA894", "#BFAE96", "#A9A1B3"])}</div>
+      <div><p class="small"><b>✓ 鮮明但舒服：</b>比賽最討喜</p>${swatches(["#E5484D", "#3CB371", "#2F6FDB", "#F2B632", "#B05CC8"])}</div></div></div>
+  <div class="card"><h2>2. 一組配色方案＝背景與文字色＋物件色彩</h2>
+    <p><b>白、黑、灰也是顏色，一樣要選。</b>但「文字用的顏色」和「物件用的顏色」要分開想：</p>
+    <div class="grid2">
+      <div><h3>A. 背景與文字色（2～3 色）</h3>${sw2([c.bg, c.text, c.text2], ["背景色", "主文字色", "次要文字色"])}
+        <ul class="small"><li><b>背景色：</b>內文頁底色，通常是白或很淺的灰；選深色背景時，文字色就要換成淺色。</li>
+        <li><b>主文字色：</b>標題、內文的預設顏色，常用深灰或黑。</li><li><b>次要文字色：</b>說明、註解、圖表軸標，常用灰色。</li></ul></div>
+      <div><h3>B. 物件色彩（3～5 色，可增減）</h3>${sw2(c.colors, c.colors.map((_, i) => colorName(i, c)))}
+        <ul class="small"><li>用在色塊、圖形、分隔頁、導覽列、圖表、圖示。</li>
+        <li><b>主色：</b>代表整份簡報的顏色。<b>強調色：</b>從物件色裡挑一個，用在重點數字、重點文字、目前章節。</li>
+        <li><b>幾色？</b>3 色最穩定；4～5 色適合「每章一色」或分群、項目多的題目；超過 5 色容易亂。</li></ul></div></div></div>
+  <div class="card"><h2>3. 文字顏色要有彈性：層次分明、邏輯一致最重要</h2>
+    <div class="grid2"><div>
+      <ul class="small">
+        <li>選好的主文字色是<b>預設</b>，不是每張都一定要用它。</li>
+        <li><b>小標題可以直接用物件色</b>（例如章節色、分群色），讓標題和它說明的色塊、圖形連在一起。</li>
+        <li><b>色塊上的文字</b>跟著色塊調整：深色塊用白字，淺色塊用深色字。</li>
+        <li>原則是：<b>同一層級用同一種顏色、整份簡報一致</b>。評審一看就分得出標題、小標、內文、重點。</li>
+        <li>拿物件色當文字前，先看下面「可讀性檢查」：<b>黃色、淺綠、淺藍這類淺色放在白底上幾乎看不到</b>。這時色塊照樣用原色，但當文字時要用同色系調深的版本（例如黃色字改成深金黃），或乾脆用主文字色。</li></ul></div>
+      <div class="card" style="background:${c.bg};margin:0;border:1px solid #ddd">
+        <div style="color:${c.text};font-size:22px;font-weight:800">大標題：客戶分群分析</div>
+        <div style="color:${c.main};font-size:16px;font-weight:700;margin-top:8px">小標題用物件色：第一群　高活躍忠誠會員</div>
+        <div style="color:${c.text};font-size:14px;margin-top:4px">內文用主文字色：兩年內平均消費最高、進館頻率每週 1 次以上。</div>
+        <div style="color:${c.accent};font-size:26px;font-weight:800;margin-top:6px">45,000 元 <span style="font-size:13px">重點數字用強調色</span></div>
+        <div style="color:${c.text2};font-size:12px;margin-top:4px">註解用次要文字色：資料來源 公司會員資料</div>
+        <div style="background:${c.main};color:${bestText(c.main)};border-radius:8px;padding:6px 10px;margin-top:8px;font-size:14px;font-weight:700">色塊上的文字跟著色塊換成白色或深色</div></div></div></div>
+  <div class="card"><h2>4. 60-30-10 比例</h2>
+    <div class="ratio"><div style="flex:60;background:${c.bg};color:${c.text};border:1px solid #ddd">60% 背景色</div><div style="flex:30;display:flex">${c.colors.filter((_, i) => i !== c.acc).map(h => `<span style="flex:1;align-self:stretch;background:${h}"></span>`).join("")}</div><div style="flex:10;background:${c.accent};color:${bestText(c.accent)}">10%</div></div>
+    <p class="muted small">背景 60%、物件色 30%、強調色 10%；文字色另外算。強調色越少越有效，整頁都是強調色就等於沒有重點。<b>越亮、越鮮豔的顏色，使用面積要越小。</b></p></div>
+  <div class="card"><h2>5. 對應到 PPT 的「自訂佈景主題色彩」</h2>
+    <p>設計 → 變化 → 色彩 → 自訂色彩，裡面有 12 格。照下表填，插入的文字預設就是主文字色、投影片背景就是背景色：</p>
+    <table class="tbl">${[["文字/背景 - 深色 1", "主文字色", c.text], ["文字/背景 - 淺色 1", "背景色", c.bg], ["文字/背景 - 深色 2", "次要文字色", c.text2],
+      ["文字/背景 - 淺色 2", "淺色底（主色的淡色，做色塊底）", c.soft],
+      ...c.colors.map((h, i) => [`輔色 ${i + 1}`, colorName(i, c), h]),
+      ...(c.colors.length < 6 ? [[`輔色 ${c.colors.length + 1}～6`, "其他用色（可放物件色的深淺變化）", light(c.main, .3)]] : [])].map(([a, b, h]) =>
+      `<tr><td>${a}</td><td><span style="display:inline-block;width:28px;height:18px;border-radius:4px;border:1px solid #ccc;vertical-align:middle;background:${h}"></span> ${b}</td><td class="muted">${h}</td></tr>`).join("")}</table>
+    <p class="muted small">物件色依序放進輔色 1～6（最多 6 色）。深色背景的配色方案：背景放深色、文字放淺色。</p></div>
+  <div class="card rel"><h2>6. 色彩關係：從主色延伸出其他物件色</h2><p class="muted small">以下用你目前主色的色相示範，調成「鮮明但不刺眼」的版本；實際使用時可以再依需要調整明度與彩度</p>
+    <div class="grid2">
+      <div><h3>同色系（實務常用，但要小心單調）</h3>${swatches(mono)}<p class="small">同一個色相，只改深淺，很安全、實務上很常用。但比賽作品只用同色系容易顯得單調、重點不突出，<b>一定要再搭一個明亮的強調色</b>。</p></div>
+      <div><h3>類似色（和諧）</h3>${swatches(ana)}<p class="small">色相左右各差 30°，適合當輔助色，例如圖表的不同數列。</p></div>
+      <div><h3>互補色（最搶眼）</h3>${swatches(comp)}<p class="small">色相差 180°，對比最強、最吸睛，適合拿來當強調色，用在重點數字與重點文字。</p></div>
+      <div><h3>分裂互補（豐富但不刺眼）</h3>${swatches(split)}<p class="small">互補色左右各偏 30°，色彩豐富但不刺眼。</p></div>
+      <div><h3>均分色環（四色、五色）</h3>
+        <p class="small" style="margin:0">✗ 機械式平均分：有的顏色特別搶眼（紫、洋紅），有的偏髒（黃綠），不分明</p>${swatches(evenRaw)}
+        <p class="small" style="margin:6px 0 0">✓ 依眼睛感受微調後：鮮明、亮度接近、每色都分得清楚</p>${swatches(even)}
+        <p class="small">色環平均分成 4～5 等分，適合「每章一色」。但不能只照角度分完就用，要再微調：<b>特別搶眼的紫、洋紅降一點彩度或避開</b>；容易顯髒的黃綠往黃或綠靠；讓每個顏色的亮度、鮮豔度看起來差不多，評審才分得清每一章。</p></div></div></div>
+  <div class="card"><h2>7. 對比與可讀性</h2>
+    <p>文字和背景的對比值：<b>內文至少 4.5</b>，大標題、小標題（粗體大字）至少 3。不夠的話評審在投影機上會看不清楚。</p>
+    ${rows.map(([bg, fg, lab]) => { const r = contrast(bg, fg); return `<div class="textdemo" style="background:${bg};color:${fg};border:1px solid #e3e3e3">
+      <span>${lab}：這是內文範例 Text 2026</span><b>${r.toFixed(1)} ${r >= 4.5 ? "✓" : r >= 3 ? "△ 只適合大標、小標" : "✗ 只用在色塊"}</b></div>`; }).join("")}</div>
+  <div class="card"><h2>8. 配色方案參考（點一下套用）</h2><p class="muted small">這些只是起點，套用後請依題目與自己的喜好調整，建立自己的配色方案。</p><div class="presets">${PRESETS.map((p, i) =>
+    `<button class="preset" data-p="${i}">${swatches(palAll(p), true)}<b>${p.n}</b></button>`).join("")}</div></div>
+  <div class="card"><h2>9. 比賽現場提醒</h2><ol>
+    <li>比賽不能上網，<b>只要背熟最後決定拿上場的那一組母片配色</b>（背景與文字色＋物件色彩的色碼）。</li>
+    <li>進場第一件事：開「空白簡報」，不用任何內建佈景主題或範本；到設計 → 變化 → 色彩 → 自訂色彩，把色碼輸入並存檔。</li>
+    <li>不論從佈景主題色彩挑、或用滴管從色票圈吸，<b>所有顏色都要在自己的配色方案裡</b>，不要臨時加入方案外的顏色。同一色的較淺、較深變化可以用，但要有規則、全篇一致。</li>
+    <li><b>在母片畫面外放色票圈：</b>建母片時，在最上層母片的投影片範圍外畫幾個圓圈（或方框），依序填入背景、文字與物件色彩。播放時看不到，但做內容時每一頁都看得到，要套色直接用<b>滴管</b>吸，不用每次到選色按鈕裡找，省下很多時間。
+      <div style="margin:8px 0"><svg viewBox="0 0 420 200" style="max-width:420px;width:100%;background:#eef3f1;border-radius:8px">
+        ${[c.text, ...c.colors].slice(0, 6).map((h, i) => `<circle cx="${40 + i * 44}" cy="26" r="16" fill="${h}" stroke="#333" stroke-width="1.5"/>`).join("")}
+        <rect x="30" y="54" width="360" height="132" fill="${c.bg}" stroke="#bbb"/>
+        <text x="210" y="125" font-size="14" text-anchor="middle" fill="#888">投影片範圍（播放時只看得到這裡）</text>
+        <text x="330" y="31" font-size="12" text-anchor="middle" fill="#555">← 畫面外的色票圈</text></svg></div></li>
+    <li>平常練習時，用「滴管」從傳單、得獎作品吸色，記錄下喜歡的組合。</li>
+    <li>依題目的產業調整：健身、科技、餐飲給人的感覺不同，色彩要跟主題一致。</li></ol></div>`;
+  $$("[data-p]").forEach(b => b.onclick = () => { const p = PRESETS[b.dataset.p]; P = normPal(p); savePal(); WH = null; store("bp_wheel2", null); TAB = "style"; render(); });
+}
+
+function checks(c) {
+  c = normPal({ ...P, ...c });
+  const rows = [["背景＋主文字", contrast(c.bg, c.text), 4.5], ["背景＋次要文字", contrast(c.bg, c.text2), 4.5]];
+  c.colors.forEach((h, i) => rows.push([`${colorName(i, c)}當小標題字`, contrast(c.bg, h), 3]));
+  rows.push(["主色色塊上的文字", Math.max(contrast(c.main, "#FFFFFF"), contrast(c.main, c.text), contrast(c.main, c.bg)), 4.5]);
+  return rows.map(([n, r, need]) => `<div class="ck"><span>${n}</span><b class="${r >= need ? "good" : "warn"}">${r.toFixed(1)} ${r >= need ? "✓" : "✗"}</b></div>`).join("")
+    + (() => { const hot = c.colors.filter(h => { const [, sa, l] = rgb2hsl(hex2rgb(h)); return sa > .9 && l > .4 && l < .65; });
+        const dull = c.colors.filter(h => { const [, sa] = rgb2hsl(hex2rgb(h)); return sa < .3; });
+        const dullHtml = dull.length >= Math.ceil(c.colors.length / 2) ? `<div class="ck"><span>偏灰的顏色太多：${dull.join("、")}</span><b class="warn">△</b></div><p class="muted small" style="margin:2px 0 0">整體太灰會沉悶、不吸睛，比賽建議主色與強調色選鮮明一點的顏色。</p>` : "";
+        return dullHtml + (hot.length ? `<div class="ck"><span>高彩度純色：${hot.join("、")}</span><b class="warn">△</b></div><p class="muted small" style="margin:2px 0 0">接近純色、很刺眼，只適合小面積點綴；大面積使用時建議降一點彩度或明度。</p>` : ""); })()
+    + `<p class="muted small" style="margin:6px 0 0">標 ✗ 的物件色不適合當文字，只用在色塊與圖形。</p>`;
+}
+
+function shape() {
+  const c = derived();
+  $("#body").innerHTML = `<div class="ref">💡 以下範例只是示範「基本圖形可以怎麼組合」，<b>不是要你照抄</b>。學會手法後，請自己變化出不同的組合。</div><p class="muted">範例全部只用 PPT 內建的基本圖形，顏色會跟著你目前選的色票變化。</p>
+    <div class="gallery">${DEMOS.map((d, i) => `<div class="card gcard"><div class="slide">${demo(i, c)}</div>
+      <h3>${i + 1}. ${d.t}</h3><ol>${d.s.map(x => `<li>${esc(x)}</li>`).join("")}</ol></div>`).join("")}</div>`;
+}
+
+
+/* ---------------- 色環配色 ---------------- */
+const MODES = [
+  { k: "free", n: "自由搭配", d: "每個點都可以自己拖" },
+  { k: "mono", n: "同色系", d: "同一色相，只改深淺" },
+  { k: "analog", n: "類似色", d: "主色左右每隔 30°" },
+  { k: "comp", n: "互補色", d: "主色＋對面 180°" },
+  { k: "split", n: "分裂互補", d: "對面左右各 30°" },
+  { k: "even", n: "均分色環", d: "三角／四方／五等分，適合每章一色" }
+];
+const OFFS = {
+  analog: { 2: [0, 30], 3: [0, -30, 30], 4: [0, -30, 30, 60], 5: [0, -30, 30, -60, 60], 6: [0, -30, 30, -60, 60, 90] },
+  comp: { 2: [0, 180], 3: [0, 180, 200], 4: [0, 180, 20, 200], 5: [0, 180, 20, 200, -20], 6: [0, 180, 20, 200, -20, 160] },
+  split: { 2: [0, 150], 3: [0, 150, 210], 4: [0, 150, 210, 30], 5: [0, 150, 210, 30, -30], 6: [0, 150, 210, 30, -30, 180] },
+  even: { 2: [0, 180], 3: [0, 120, 240], 4: [0, 90, 180, 270], 5: [0, 72, 144, 216, 288], 6: [0, 60, 120, 180, 240, 300] }
+};
+const ptHex = p => hsl2hex(p.h, p.s, p.l);
+const toPt = h => { const [a, b, l] = rgb2hsl(hex2rgb(h)); return { h: a, s: b, l }; };
+let WH = store("bp_wheel2");
+function syncWheel() { if (!WH || !Array.isArray(WH.pts)) WH = { mode: "free", sel: 0, acc: P.acc, pts: P.colors.map(toPt) }; }
+function setCount(n) {
+  while (WH.pts.length < n) { const m = WH.pts[0]; WH.pts.push({ h: (m.h + 72 * WH.pts.length) % 360, s: Math.max(m.s, .75), l: .55 }); }
+  WH.pts.length = n; if (WH.sel >= n) WH.sel = 0; if (WH.acc >= n) WH.acc = n - 1;
+}
+function applyMode() {
+  const m = WH.pts[0], n = WH.pts.length, r = WH.mode;
+  if (r === "free") return;
+  if (r === "mono") { const ls = [m.l, Math.min(.85, m.l + .22), Math.max(.18, m.l - .18), Math.min(.92, m.l + .36), Math.max(.12, m.l - .3), Math.min(.95, m.l + .45)];
+    WH.pts.forEach((p, i) => { if (i) { p.h = m.h; p.s = m.s; p.l = ls[i]; } }); return; }
+  const off = OFFS[r][n];
+  WH.pts.forEach((p, i) => { if (i) { p.h = (m.h + off[i] + 360) % 360; p.s = Math.min(Math.max(p.s, .6), .75); if (p.l < .35 || p.l > .65) p.l = .53;
+    if (p.h > 260 && p.h < 335) { p.s = Math.min(p.s, .5); }            // 紫、洋紅特別搶眼：降彩度
+    if (p.h > 65 && p.h < 100) { p.h = p.h < 82 ? 50 : 125; }          // 黃綠容易髒：往黃或綠靠
+  } });
+}
+const wHexes = () => WH.pts.map(ptHex);
+const wLabel = i => i === 0 ? "主" : i === WH.acc ? "強" : String(i + 1);
+
+function wheel() {
+  syncWheel(); applyMode();
+  const R = 140;
+  const pos = p => [R + Math.sin(p.h * Math.PI / 180) * p.s * R, R - Math.cos(p.h * Math.PI / 180) * p.s * R];
+  const cur = WH.pts[WH.sel], hexes = wHexes();
+  const tmp = derived({ ...P, colors: hexes, acc: WH.acc });
+  $("#body").innerHTML = `<div class="layout">
+    <div class="card"><h2>色環</h2>
+      <label style="margin-top:0">物件色彩要幾色？</label>
+      <div class="row">${[3, 4, 5].map(n => `<button data-cnt="${n}" class="${WH.pts.length === n ? "primary" : ""}">${n} 色</button>`).join("")}</div>
+      <div class="wheel" id="wheel" style="width:${R * 2}px;height:${R * 2}px;margin-top:12px">
+        <svg width="${R * 2}" height="${R * 2}" style="position:absolute;inset:0">${WH.pts.map(p => { const [x, y] = pos(p);
+          return `<line x1="${R}" y1="${R}" x2="${x}" y2="${y}" stroke="#fff" stroke-width="1.5" opacity=".8"/>`; }).join("")}</svg>
+        ${WH.pts.map((p, i) => { const [x, y] = pos(p);
+          return `<span class="hd ${i === WH.sel ? "on" : ""}" data-k="${i}" style="left:${x}px;top:${y}px;background:${hexes[i]};color:${bestText(hexes[i])}">${wLabel(i)}</span>`; }).join("")}
+      </div>
+      <p class="muted small center">拖曳圓點換色相（角度）和飽和度（離中心遠近）</p>
+      <label>正在調整：${i18(WH.sel)}　明度（深淺）</label>
+      <input type="range" id="lv" min="10" max="90" value="${Math.round(cur.l * 100)}">
+      <label>配色規則</label>
+      <div class="modes">${MODES.map(m => `<button data-m="${m.k}" class="${WH.mode === m.k ? "on" : ""}"><b>${m.n}</b><div class="muted small">${m.d}</div></button>`).join("")}</div>
+    </div>
+    <div>
+      <div class="card"><h2>這組配色</h2>
+        <h3 style="margin-top:0">物件色彩（${hexes.length} 色）　<span class="muted small">點選哪一個當強調色</span></h3>
+        <div class="objcols">${hexes.map((h, i) => `<label class="objc ${i === WH.acc ? "on" : ""}"><div class="bigsw" style="background:${h}"></div>
+          <input type="radio" name="wacc" value="${i}" ${i === WH.acc ? "checked" : ""} style="width:auto"> <b>${i === 0 ? "主色" : i === WH.acc ? "強調色" : "色彩 " + (i + 1)}</b><div class="muted small">${h}</div></label>`).join("")}</div>
+        <h3>背景與文字（白、黑、灰也是顏色）</h3>
+        <div class="grid3">${["bg", "text", "text2"].map(k => `<div class="pick-row" style="grid-template-columns:46px 1fr"><span class="lab">${{ bg: "背景色", text: "主文字色", text2: "次要文字色" }[k]}</span><input type="color" data-n="${k}" value="${P[k]}"><input data-nh="${k}" value="${P[k]}" maxlength="7"></div>`).join("")}</div>
+        <h3>可讀性檢查</h3>${checks({ colors: hexes, acc: WH.acc })}
+        <p class="row"><button class="primary" id="toStyle">套用到母片風格</button><button id="saveW">存到我的色票</button></p></div>
+      <div class="card"><h2>即時預覽 <span class="muted small">（只是參考，母片版面請自己設計）</span></h2><div class="slides">
+        ${["cover", "toc", "section", "content"].map(t => `<div class="slide">${slide(t, tmp)}</div>`).join("")}</div></div>
+    </div></div>`;
+
+  const el = $("#wheel"), box = () => el.getBoundingClientRect();
+  let drag = null;
+  $$(".hd").forEach(h => h.onpointerdown = e => {
+    const k = +h.dataset.k;
+    if (WH.mode !== "free" && k !== 0) { WH.mode = "free"; toast("已切換成自由搭配"); }
+    WH.sel = k; drag = k; e.preventDefault(); el.setPointerCapture && el.setPointerCapture(e.pointerId);
+  });
+  el.onpointermove = e => { if (drag === null) return; const b = box(); const dx = e.clientX - b.left - R, dy = e.clientY - b.top - R;
+    const p = WH.pts[drag]; p.h = (Math.atan2(dx, -dy) * 180 / Math.PI + 360) % 360; p.s = Math.min(1, Math.hypot(dx, dy) / R);
+    store("bp_wheel2", WH); wheelLater(); };
+  el.onpointerup = el.onpointerleave = () => { if (drag !== null) { drag = null; wheel(); } };
+  $("#lv").oninput = e => { cur.l = e.target.value / 100; store("bp_wheel2", WH); wheelLater(); };
+  $("#lv").onchange = () => wheel();
+  $$("[data-cnt]").forEach(b => b.onclick = () => { setCount(+b.dataset.cnt); if (WH.mode === "mono" || WH.mode === "free") {} store("bp_wheel2", WH); wheel(); });
+  $$("[data-m]").forEach(b => b.onclick = () => { WH.mode = b.dataset.m; WH.sel = 0; store("bp_wheel2", WH); wheel(); });
+  $$("[name=wacc]").forEach(r => r.onchange = () => { WH.acc = +r.value; store("bp_wheel2", WH); wheel(); });
+  $$("[data-n]").forEach(x => x.onchange = () => { P[x.dataset.n] = x.value.toUpperCase(); savePal(); wheel(); });
+  $$("[data-nh]").forEach(x => x.onchange = () => { let v = x.value.trim(); if (!v.startsWith("#")) v = "#" + v;
+    if (/^#[0-9a-fA-F]{6}$/.test(v)) { P[x.dataset.nh] = v.toUpperCase(); savePal(); wheel(); } else toast("色碼格式：#RRGGBB", true); });
+  $("#toStyle").onclick = () => { P = { ...P, colors: wHexes(), acc: WH.acc }; savePal(); TAB = "style"; render(); toast("已套用"); };
+  $("#saveW").onclick = () => { const name = prompt("色票名稱", "色環配色 " + (SAVED.length + 1)); if (name === null) return;
+    SAVED.push({ name, ...normPal({ ...P, colors: wHexes(), acc: WH.acc }), at: new Date().toLocaleDateString("sv-SE") }); store("bp_palettes", SAVED); toast("已存到我的色票"); };
+}
+const i18 = i => i === 0 ? "主色" : i === WH.acc ? "強調色" : "色彩 " + (i + 1);
+let wheelH; function wheelLater() { cancelAnimationFrame(wheelH); wheelH = requestAnimationFrame(() => {
+  const R = 140; applyMode();
+  const P2 = p => [R + Math.sin(p.h * Math.PI / 180) * p.s * R, R - Math.cos(p.h * Math.PI / 180) * p.s * R];
+  $$(".hd").forEach(h => { const p = WH.pts[+h.dataset.k], [x, y] = P2(p); h.style.left = x + "px"; h.style.top = y + "px"; h.style.background = ptHex(p); });
+  $$("#wheel line").forEach((ln, i) => { const [x, y] = P2(WH.pts[i]); ln.setAttribute("x2", x); ln.setAttribute("y2", y); });
+  $$(".objc .bigsw").forEach((b, i) => b.style.background = ptHex(WH.pts[i]));
+}); }
+
+/* ---------------- 母片風格 ---------------- */
+async function loadProg() {
+  if (!ME || PROG) return;
+  const r = await api("progress", ME).catch(() => null);
+  PROG = r && r.ok ? r.logs : [];
+}
+
+function milestones() {
+  if (!ME) return `<p class="muted">登入後會顯示你的母片養成進度。</p>`;
+  if (!PROG) return `<p class="muted">載入中…</p>`;
+  const L = PROG;
+  const insp = L.filter(l => l.drill === "S01").length;
+  const card = L.filter(l => l.drill === "S02");
+  const d01 = L.filter(l => l.drill === "D01");
+  const built = d01.some(l => l.url);
+  const last3 = d01.slice(-3);
+  const fast = last3.length === 3 && last3.every(l => l.seconds <= 1800);
+  const st = (ok, txt) => `<span class="tag ${ok ? "pass" : "wait"}">${ok ? "完成" : txt}</span>`;
+  return `<div class="steps">
+    <div class="stp"><div class="row">${st(insp >= 3, insp + "/3")}<b>① 收集靈感</b></div>
+      <p class="small">找 3 張喜歡的傳單、海報或得獎作品，拍照上傳，寫下你喜歡它哪裡（顏色？版面？形狀？）。</p>
+      <button id="inspBtn">上傳一張靈感</button>
+      <div id="inspForm" class="hidden"><input type="file" id="inspFile" accept="image/*"><textarea id="inspNote" style="min-height:60px" placeholder="我喜歡它的…"></textarea>
+        <button class="primary" id="inspSend">送出</button></div></div>
+    <div class="stp"><div class="row">${st(card.length > 0, "未交")}<b>② 定出風格卡</b></div>
+      <p class="small">在上面選好色票、形狀語言、字型，取一個名字，交給老師確認。</p>
+      ${card.length ? `<p class="small muted">最近一次：${card[card.length - 1].date}　${statusTag(card[card.length - 1].status)}</p>` : ""}</div>
+    <div class="stp"><div class="row">${st(built, "未上傳")}<b>③ 在 PPT 做出母片</b></div>
+      <p class="small">從「空白簡報」開始（不用任何內建佈景主題或範本），照風格卡在投影片母片裡自己畫出封面、目錄、分隔頁、內文、結尾五種版面配置，存成 .potx 或截圖上傳。做好後把每一步記進「⑥ 母片製作清單」。</p>
+      <a class="btn" href="index.html#go=D01">去做「從零建好母片」關卡</a></div>
+    <div class="stp"><div class="row">${st(fast, "練習中")}<b>④ 背起來：30 分鐘內重建</b></div>
+      <p class="small">照「母片製作清單」的順序，不看檔案從零重建：色碼、物件、物件顏色、大小、位置、對齊都要一模一樣。<b>連續 3 次</b>都在 30 分鐘內就算背起來了。</p>
+      <p class="small">最近 3 次：${last3.length ? last3.map(l => `<b class="${l.seconds <= 1800 ? "good" : "warn"}">${fmtSec(l.seconds)}</b>`).join("、") : "還沒有紀錄"}</p></div>
+  </div>`;
+}
+
+function styleTab() {
+  const c = derived(), f = fontOf();
+  const field = (k, n) => `<div class="pick-row"><span class="lab">${n}</span><input type="color" id="${k}" value="${P[k]}"><input id="${k}H" value="${P[k]}" maxlength="7"></div>`;
+  const colRow = (h, i) => `<div class="colrow"><input type="color" data-ci="${i}" value="${h}"><input data-cih="${i}" value="${h}" maxlength="7">
+    <label class="accl"><input type="radio" name="acc" value="${i}" ${i === P.acc ? "checked" : ""}>強調色</label>
+    ${P.colors.length > 2 && i > 0 ? `<button class="small" data-del-c="${i}" style="padding:2px 8px">✕</button>` : "<span></span>"}</div>`;
+  $("#body").innerHTML = `<div class="ref">💡 這裡的預覽、形狀語言和範例<b>都只是參考</b>，用來幫你找方向，<b>不是要你照抄</b>。真正的母片要依你自己的巧思設計：版面怎麼切、圖形怎麼組、裝飾放哪裡，都由你決定，做出屬於自己的風格。</div><div class="layout">
+    <div><div class="card"><h2>我的母片風格</h2>
+      <h3>① 配色方案 <button class="small" id="goWheel" style="padding:2px 8px">用色環挑</button></h3>
+      <p class="muted small" style="margin:0"><b>A. 背景與文字色</b></p>${field("bg", "背景色（60%）")}${field("text", "主文字色")}${field("text2", "次要文字色")}
+      <p class="muted small" style="margin:10px 0 0"><b>B. 物件色彩（${P.colors.length} 色）</b>第一個是主色，勾一個當強調色</p>
+      ${P.colors.map(colRow).join("")}
+      ${P.colors.length < 6 ? `<button class="small" id="addC">＋ 新增一個顏色</button>` : ""}
+      <h3>可讀性檢查</h3><div id="ckBox">${checks(c)}</div>
+      <h3>② 形狀語言 <span class="muted small">（選一個方向，不是固定版型）</span></h3><div class="opts">${SHAPES.map(s => `<label class="opt ${ST.shape === s.k ? "on" : ""}"><input type="radio" name="shape" value="${s.k}" ${ST.shape === s.k ? "checked" : ""}>
+        <div class="mini">${slide("cover", c, s.k)}</div><div><b>${s.n}</b><div class="muted small">${s.d}</div></div></label>`).join("")}</div>
+      <h3>③ 字型組合</h3><div class="opts">${FONTS.map(x => `<label class="opt ${ST.font === x.k ? "on" : ""}"><input type="radio" name="font" value="${x.k}" ${ST.font === x.k ? "checked" : ""}>
+        <div><b style="font-family:${x.t}">${x.n}</b><div class="muted small">${x.d}</div></div></label>`).join("")}</div>
+      <h3>④ 風格名稱</h3><input id="sname" value="${esc(ST.name)}" placeholder="例如：活力斜切橘">
+      <p class="row"><button class="primary" id="saveS">存成風格卡</button><button id="sendS">交給老師</button></p></div></div>
+    <div><div class="card"><h2>${esc(ST.name || "未命名風格")}<span class="muted small">｜${SHAPES.find(s => s.k === ST.shape).n}・${f.n}</span></h2>
+      <div class="slides" id="slideBox">${[["cover", "封面"], ["toc", "目錄"], ["section", "分隔頁"], ["content", "內文頁"], ["end", "結尾"]].map(([t, n]) =>
+        `<div><div class="slide">${slide(t, c)}</div><div class="cap">${n}</div></div>`).join("")}
+        <div class="spec"><b>風格規格</b><div class="muted small">色碼與字型照這裡設定；版面設計請依自己的巧思，不必照預覽做。</div><ul class="small" id="specBox">${specHtml(c, f)}</ul></div></div>
+      ${c.colors.length >= 4 ? `<p class="muted small">物件色 4 色以上時，預覽會用「每章一色」呈現：目錄編號、分隔頁、導覽列換成章節色。</p>` : ""}</div>
+    </div></div>
+    <div class="card"><h2>母片養成進度</h2>${milestones()}</div>`;
+
+  ["bg", "text", "text2"].forEach(k => {
+    $("#" + k).oninput = e => { P[k] = e.target.value.toUpperCase(); savePal(); $("#" + k + "H").value = P[k]; repaint(); };
+    $("#" + k + "H").onchange = e => { let v = e.target.value.trim(); if (!v.startsWith("#")) v = "#" + v;
+      if (/^#[0-9a-fA-F]{6}$/.test(v)) { P[k] = v.toUpperCase(); savePal(); styleTab(); } else toast("色碼格式：#RRGGBB", true); };
+  });
+  $$("[data-ci]").forEach(x => x.oninput = () => { const i = +x.dataset.ci; P.colors[i] = x.value.toUpperCase(); savePal(); $(`[data-cih="${i}"]`).value = P.colors[i]; repaint(); });
+  $$("[data-cih]").forEach(x => x.onchange = () => { let v = x.value.trim(); if (!v.startsWith("#")) v = "#" + v;
+    if (/^#[0-9a-fA-F]{6}$/.test(v)) { P.colors[+x.dataset.cih] = v.toUpperCase(); savePal(); styleTab(); } else toast("色碼格式：#RRGGBB", true); });
+  $$("[name=acc]").forEach(r => r.onchange = () => { P.acc = +r.value; savePal(); styleTab(); });
+  $$("[data-del-c]").forEach(b => b.onclick = () => { const i = +b.dataset.delC; P.colors.splice(i, 1);
+    if (P.acc === i) P.acc = P.colors.length - 1; else if (P.acc > i) P.acc--; savePal(); styleTab(); });
+  if ($("#addC")) $("#addC").onclick = () => { P.colors.push(vivid(P.colors[0], 72 * P.colors.length)); savePal(); styleTab(); };
+  $$("[name=shape]").forEach(r => r.onchange = () => { ST.shape = r.value; store("bp_style", ST); styleTab(); });
+  $$("[name=font]").forEach(r => r.onchange = () => { ST.font = r.value; store("bp_style", ST); styleTab(); });
+  $("#sname").oninput = e => { ST.name = e.target.value; store("bp_style", ST); };
+  $("#goWheel").onclick = () => { WH = null; store("bp_wheel2", null); TAB = "wheel"; render(); };
+  $("#saveS").onclick = () => { ST.name = $("#sname").value.trim() || "未命名風格"; store("bp_style", ST);
+    SAVED.push({ name: ST.name, ...P, shape: ST.shape, font: ST.font, at: new Date().toLocaleDateString("sv-SE") }); store("bp_palettes", SAVED); toast("已存成風格卡"); };
+  $("#sendS").onclick = async () => {
+    if (!ME) return toast("請先回首頁登入", true);
+    const r = await api("submit", { ...ME, type: "style", drillCode: "S02", drillName: "母片風格卡：" + (ST.name || "未命名"), seconds: 0,
+      answer: `風格名稱：${ST.name}\n背景色 ${P.bg}｜主文字 ${P.text}｜次要文字 ${P.text2}\n物件色彩：${P.colors.map((h, i) => colorName(i) + " " + h).join("｜")}\n形狀：${SHAPES.find(s => s.k === ST.shape).n}\n字型：${fontOf().n}` })
+      .catch(() => ({ ok: false, msg: "連線失敗" }));
+    toast(r.ok ? "已交給老師" : r.msg, !r.ok); if (r.ok) { PROG = null; await loadProg(); styleTab(); }
+  };
+  if ($("#inspBtn")) {
+    $("#inspBtn").onclick = () => $("#inspForm").classList.toggle("hidden");
+    $("#inspSend").onclick = async () => {
+      const file = $("#inspFile").files[0]; if (!file) return toast("請選一張圖片", true);
+      $("#inspSend").disabled = true;
+      const r = await api("submit", { ...ME, type: "style", drillCode: "S01", drillName: "母片靈感收集", seconds: 0,
+        reflection: $("#inspNote").value, file: await readFileB64(file) }).catch(() => ({ ok: false, msg: "連線失敗" }));
+      toast(r.ok ? "已上傳" : r.msg, !r.ok); if (r.ok) { PROG = null; await loadProg(); styleTab(); }
+    };
+  }
+}
+function specHtml(c, f) {
+  return `<li>背景色 ${c.bg}｜主文字 ${c.text}｜次要文字 ${c.text2}</li>
+    <li>物件色彩：${c.colors.map((h, i) => `${colorName(i, c)} ${h}`).join("｜")}</li>
+    <li>自訂色彩：深色1＝主文字、淺色1＝背景、深色2＝次要文字、淺色2＝淺色底、輔色1～${c.colors.length}＝物件色彩（依序）</li>
+    <li>標題字：${f.n.split("＋")[0]}，內文字：${f.n.split("＋")[1] || f.n}</li>
+    <li>形狀：${SHAPES.find(s => s.k === ST.shape).n}（${SHAPES.find(s => s.k === ST.shape).d}）</li>
+    <li>版面配置：封面、目錄、分隔頁、內文、結尾</li>`;
+}
+let repH; function repaint() { clearTimeout(repH); repH = setTimeout(() => { const c = derived();
+  $("#ckBox").innerHTML = checks(c); $("#specBox").innerHTML = specHtml(c, fontOf());
+  $$("#slideBox .slide").forEach((el, i) => el.innerHTML = slide(["cover", "toc", "section", "content", "end"][i], c));
+  $$(".opt .mini").forEach((el, i) => el.innerHTML = slide("cover", c, SHAPES[i].k)); }, 40); }
+
+/* ---------------- 我的色票 ---------------- */
+function mine() {
+  $("#body").innerHTML = `<div class="card"><h2>我的色票與風格卡</h2>
+    <p class="muted small">平常可以多試幾組；最後只要背熟決定拿上場的那一組母片配色，比賽時直接輸入色碼。</p>
+    ${SAVED.length ? SAVED.map((p, i) => { const q = normPal(p); return `<div class="log"><div class="row" style="justify-content:space-between">
+      <div style="min-width:220px">${swatches(palAll(q), true)}<b>${esc(p.name)}</b>
+        <span class="muted small">背景 ${q.bg}｜文字 ${q.text}、${q.text2}｜物件色 ${q.colors.join("、")}${p.shape ? "｜" + SHAPES.find(s => s.k === p.shape).n : ""}</span></div>
+      <div class="row"><button data-use="${i}">套用</button><button data-del="${i}">刪除</button></div></div></div>`; }).join("")
+      : `<p class="muted">還沒有存任何色票。</p>`}</div>`;
+  $$("[data-use]").forEach(b => b.onclick = () => { const p = SAVED[b.dataset.use]; P = normPal(p);
+    if (p.shape) { ST.shape = p.shape; ST.font = p.font; ST.name = p.name; store("bp_style", ST); }
+    savePal(); WH = null; store("bp_wheel2", null); TAB = "style"; render(); });
+  $$("[data-del]").forEach(b => b.onclick = () => { if (!confirm("刪除？")) return; SAVED.splice(b.dataset.del, 1); store("bp_palettes", SAVED); mine(); });
+}
+
+
+/* ---------------- 母片製作清單（背誦用） ---------------- */
+const RCOLS = [["item", "物件／步驟"], ["shape", "圖形種類"], ["color", "顏色"], ["size", "大小（寬×高）"], ["pos", "位置（水平, 垂直）"], ["align", "對齊／其他"]];
+const RSECS = ["0. 共用設定", "1. 最上層母片（每頁共用）", "2. 封面", "3. 目錄", "4. 章節分隔頁", "5. 內文頁", "6. 結尾"];
+function defaultRecipe() {
+  const p = P, f = fontOf();
+  return [
+    { sec: RSECS[0], item: "開空白簡報", shape: "", color: "", size: "", pos: "", align: "" },
+    { sec: RSECS[0], item: "打開參考線與格線", shape: "", color: "", size: "", pos: "", align: "Alt＋F9、Shift＋F9" },
+    { sec: RSECS[0], item: "檢視 → 投影片母片", shape: "", color: "", size: "", pos: "", align: "刪除用不到的版面配置" },
+    { sec: RSECS[0], item: "自訂色彩", shape: "", color: `深色1 ${p.text}／淺色1 ${p.bg}／深色2 ${p.text2}／輔色 ${p.colors.join("、")}`, size: "", pos: "", align: "" },
+    { sec: RSECS[0], item: "自訂字型", shape: "", color: "", size: "", pos: "", align: f.n },
+    { sec: RSECS[1], item: "畫面外色票圈", shape: "正圓（Shift）", color: "文字色＋物件色彩依序", size: "1.2×1.2 cm", pos: "投影片上方外側", align: "垂直置中、水平均分" },
+    { sec: RSECS[1], item: "", shape: "", color: "", size: "", pos: "", align: "" },
+    ...RSECS.slice(2).map(sec => ({ sec, item: "", shape: "", color: "", size: "", pos: "", align: "" }))
+  ];
+}
+let RC = store("bp_recipe") || defaultRecipe();
+let RBLUR = false;
+function recipe() {
+  const saveR = () => store("bp_recipe", RC);
+  $("#body").innerHTML = `<div class="ref">💡 要在 20～30 分鐘內完美重製母片，<b>每一項都要背得清清楚楚</b>：色碼、用什麼物件、物件的顏色、大小、位置、對齊。把你的母片照製作順序記在這裡，練到不看清單也能做出一模一樣的母片。</div>
+    <div class="card"><div class="row" style="justify-content:space-between"><h2 style="margin:0">我的母片製作清單</h2>
+      <div class="row"><label style="margin:0;color:var(--ink)"><input type="checkbox" id="blur" style="width:auto" ${RBLUR ? "checked" : ""}> 默寫模式（遮住內容，點一下才顯示）</label></div></div>
+      <p class="muted small">大小、位置請直接抄「圖形格式 → 大小」與「大小及位置」裡的數字。按「＋」在該段落新增一列；順序就是你重建時的操作順序。</p>
+      ${RSECS.map(sec => { const rows = RC.map((r, i) => [r, i]).filter(([r]) => r.sec === sec);
+        return `<h3>${sec}</h3><div style="overflow-x:auto"><table class="tbl rtbl"><thead><tr>${RCOLS.map(([, n]) => `<th>${n}</th>`).join("")}<th></th></tr></thead><tbody>
+        ${rows.map(([r, i]) => `<tr>${RCOLS.map(([k]) => `<td><input class="rin ${RBLUR ? "blur" : ""}" data-i="${i}" data-k="${k}" value="${esc(r[k] || "")}"></td>`).join("")}
+          <td><button class="small" data-rdel="${i}" style="padding:2px 8px">✕</button></td></tr>`).join("")}</tbody></table></div>
+        <button class="small" data-radd="${sec}">＋ 新增一列</button>`; }).join("")}
+      <p class="row" style="margin-top:14px"><button class="primary" id="rsend">交給老師</button><button id="rreset">重設為範本</button></p></div>`;
+  $$(".rin").forEach(x => { x.oninput = () => { RC[+x.dataset.i][x.dataset.k] = x.value; saveR(); }; x.onfocus = () => x.classList.remove("blur"); });
+  $$("[data-radd]").forEach(b => b.onclick = () => { const sec = b.dataset.radd; let at = -1; RC.forEach((r, i) => { if (r.sec === sec) at = i; });
+    RC.splice(at + 1, 0, { sec, item: "", shape: "", color: "", size: "", pos: "", align: "" }); saveR(); recipe(); });
+  $$("[data-rdel]").forEach(b => b.onclick = () => { RC.splice(+b.dataset.rdel, 1); saveR(); recipe(); });
+  $("#blur").onchange = e => { RBLUR = e.target.checked; recipe(); };
+  $("#rreset").onclick = () => { if (!confirm("清除目前內容，重設為範本？")) return; RC = defaultRecipe(); saveR(); recipe(); };
+  $("#rsend").onclick = async () => {
+    if (!ME) return toast("請先回首頁登入", true);
+    const txt = RSECS.map(sec => sec + "\n" + RC.filter(r => r.sec === sec && Object.values(r).join("").replace(sec, "").trim())
+      .map(r => "・" + RCOLS.map(([k]) => r[k]).filter(Boolean).join("｜")).join("\n")).join("\n\n");
+    const r = await api("submit", { ...ME, type: "style", drillCode: "S03", drillName: "母片製作清單", seconds: 0, answer: txt }).catch(() => ({ ok: false, msg: "連線失敗" }));
+    toast(r.ok ? "已交給老師" : r.msg, !r.ok);
+  };
+}
+
+/* ---------------- 畫面 ---------------- */
+function render() {
+  const tabs = [["learn", "① 色彩教學"], ["wheel", "② 色環配色"], ["style", "③ 母片風格"], ["shape", "④ 圖形範例"], ["mine", "⑤ 我的色票"], ["recipe", "⑥ 母片製作清單"]];
+  $("#tabs").innerHTML = tabs.map(([k, n]) => `<button data-t="${k}" class="${TAB === k ? "on" : ""}">${n}</button>`).join("");
+  $$("[data-t]").forEach(b => b.onclick = () => { TAB = b.dataset.t; render(); window.scrollTo(0, 0); });
+  ({ learn, wheel, style: styleTab, shape, mine, recipe })[TAB]();
+  if (TAB === "style" && ME && !PROG) loadProg().then(() => TAB === "style" && styleTab());
+}
+if (["#learn", "#wheel", "#style", "#shape", "#mine", "#recipe"].includes(location.hash)) TAB = location.hash.slice(1);
+(async () => {
+  if (!ME) { location.replace("index.html"); return; }   // 沒登入就回首頁登入
+  $("#body").innerHTML = `<div class="card muted">載入你的色票與風格卡…</div>`;
+  await cloudLoad();
+  P = normPal(store("bp_palette") || { colors: ["#1F5BD8", "#38BDF8", "#E53935"], acc: 2 });
+  ST = store("bp_style") || { name: "", shape: "slant", font: "jh" };
+  SAVED = store("bp_palettes") || [];
+  RC = store("bp_recipe") || defaultRecipe();
+  WH = store("bp_wheel2");
+  render();
+})();
+
+</script>
+</body>
+</html>

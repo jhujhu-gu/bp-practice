@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>商業簡報練習｜老師後台</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header><h1>老師後台</h1>
+  <div class="row"><select id="who" class="hidden" style="width:auto"></select><button id="out" class="hidden">登出</button></div>
+</header>
+<main id="app"></main>
+
+<script src="bank.js"></script>
+<script src="common.js"></script>
+<script>
+let TPIN = store("bp_tpin");
+let DATA = null, TAB = "overview", WHO = "";
+const app = $("#app");
+
+$("#out").onclick = () => { unstore("bp_tpin"); TPIN = null; showLogin(); };
+$("#who").onchange = () => { WHO = $("#who").value; render(); };
+
+function showLogin() {
+  $("#out").classList.add("hidden"); $("#who").classList.add("hidden");
+  app.innerHTML = `<div class="card login"><h2>老師登入</h2>
+    <label>老師 PIN</label><input id="p" type="password">
+    <p><button class="primary big" id="go" style="width:100%">進入</button></p></div>`;
+  $("#go").onclick = async () => {
+    const r = await api("teacherLogin", { tpin: $("#p").value.trim() }).catch(() => ({ ok: false, msg: "連線失敗" }));
+    if (!r.ok) return toast(r.msg, true);
+    TPIN = $("#p").value.trim(); store("bp_tpin", TPIN); load();
+  };
+}
+
+async function load() {
+  app.innerHTML = `<div class="card muted">載入中…</div>`;
+  const r = await api("dashboard", { tpin: TPIN }).catch(() => ({ ok: false, msg: "連線失敗" }));
+  if (!r.ok) { if (r.msg.includes("PIN")) return showLogin(); return app.innerHTML = `<div class="card">${esc(r.msg)}</div>`; }
+  DATA = r;
+  $("#out").classList.remove("hidden");
+  const sel = $("#who");
+  sel.innerHTML = r.students.map(s => `<option>${esc(s)}</option>`).join("");
+  sel.classList.toggle("hidden", r.students.length < 2);
+  WHO = WHO || r.students[0] || "";
+  sel.value = WHO;
+  render();
+}
+
+function render() {
+  const tabs = [["overview", "總覽"], ["review", "批改"], ["task", "指派任務"], ["bank", "題庫"]];
+  const wait = DATA.logs.filter(l => l.code === WHO && l.status === "待批改").length;
+  app.innerHTML = `<div class="tabs">${tabs.map(([k, n]) =>
+    `<button data-t="${k}" class="${TAB === k ? "on" : ""}">${n}${k === "review" && wait ? `（${wait}）` : ""}</button>`).join("")}
+    <button id="reload">重新整理</button></div><div id="body"></div>`;
+  $$("[data-t]").forEach(b => b.onclick = () => { TAB = b.dataset.t; render(); });
+  $("#reload").onclick = load;
+  ({ overview, review, task, bank })[TAB]();
+}
+
+/* ---------------- 總覽 ---------------- */
+function overview() {
+  const L = DATA.logs.filter(l => l.code === WHO);
+  const week = new Set(lastDays(7));
+  const last = L[L.length - 1];
+  const idle = last ? Math.round((new Date(DATA.today) - new Date(last.date)) / 864e5) : null;
+  const t = DATA.today;
+  const todayTask = DATA.tasks.filter(x => x.date === t).pop();
+  const todayCodes = todayTask ? String(todayTask.codes).split(",").filter(Boolean) : [];
+  const doneToday = new Set(L.filter(l => l.date === t).map(l => l.drill));
+  const mocks = L.filter(l => l.type === "mock");
+
+  $("#body").innerHTML = `
+    ${idle !== null && idle >= 2 ? `<div class="card" style="border-color:var(--warn)"><b class="warn">已經 ${idle} 天沒有練習紀錄</b></div>` : ""}
+    <div class="card"><h2>${esc(WHO)}｜總覽</h2><div class="stats">
+      <div class="stat"><div class="n">累計練習</div><div class="v">${L.length}</div></div>
+      <div class="stat"><div class="n">本週練習</div><div class="v">${L.filter(l => week.has(l.date)).length}</div></div>
+      <div class="stat"><div class="n">今日任務</div><div class="v">${todayCodes.filter(c => doneToday.has(c)).length}/${todayCodes.length}</div></div>
+      <div class="stat"><div class="n">最後練習</div><div class="v" style="font-size:16px">${last ? last.date : "—"}</div></div></div>
+      <h3>練習熱度</h3>${heatGrid(L)}</div>
+    <div class="card"><h2>考古題全真模擬進度</h2><p class="muted small">每份至少 2 次；選手做完後要在「批改」按通過或再修，他才能做下一次。</p>${examGrid(L, false)}</div>
+    <div class="card"><h2>速度關卡進步情形</h2><p class="muted small">綠色＝達到目標時間</p>${drillTable(L)}</div>
+    <div class="card"><h2>全真模擬：時間花在哪裡</h2>${mocks.length ? `<table class="tbl"><thead><tr><th>日期</th><th>年份</th>
+      ${MOCK_PHASES.map(p => `<th>${p.name}<div class="muted small">${p.target} 分</div></th>`).join("")}<th>總計</th></tr></thead><tbody>
+      ${mocks.map(m => `<tr><td>${m.date}</td><td>${m.year}</td>${MOCK_PHASES.map(p => { const v = m.phases[p.key] || 0;
+        return `<td class="${v > p.target * 60 ? "warn" : ""}">${fmtSec(v)}</td>`; }).join("")}<td>${fmtSec(m.seconds)}</td></tr>`).join("")}
+      </tbody></table>` : `<p class="muted">還沒有全真模擬紀錄</p>`}</div>
+    <div class="card"><h2>常漏規格排行</h2>${missingRank(L)}</div>
+    ${styleCardBox()}`;
+}
+
+/* 選手存在雲端的風格卡與母片製作清單（批改時對照色碼用） */
+function styleCardBox() {
+  const d = (DATA.sdata || {})[WHO] || {}; const J = k => { try { return JSON.parse(d[k]); } catch (e) { return null; } };
+  const st = J("bp_style"), p = J("bp_palette"), rc = J("bp_recipe");
+  if (!p && !rc) return `<div class="card"><h2>母片風格卡與製作清單</h2><p class="muted">選手還沒有在「配色與母片設計」存過資料。</p></div>`;
+  const cols = p ? (Array.isArray(p.colors) ? p.colors : [p.main, p.sub, p.accent].filter(Boolean)) : [];
+  const sw = (h, n) => `<div style="text-align:center;font-size:12px"><div style="width:54px;height:36px;border-radius:8px;border:1px solid #ddd;background:${h}"></div>${n}<div class="muted">${h}</div></div>`;
+  const rows = (rc || []).filter(r => [r.item, r.shape, r.color, r.size, r.pos, r.align].join("").trim());
+  return `<div class="card"><h2>母片風格卡：${esc((st && st.name) || "未命名")}</h2>
+    ${p ? `<div class="row" style="gap:10px;align-items:flex-start">${sw(p.bg || "#FFFFFF", "背景")}${sw(p.text || "#2B2B2B", "主文字")}${sw(p.text2 || "#6B7280", "次要文字")}
+      ${cols.map((h, i) => sw(h, i === 0 ? "主色" : i === p.acc ? "強調色" : "色彩 " + (i + 1))).join("")}</div>` : ""}
+    <p class="muted small">批改時可對照這組色碼，檢查有沒有用到方案外的顏色。</p>
+    ${rows.length ? `<h3>母片製作清單</h3><div style="overflow-x:auto"><table class="tbl"><thead><tr><th>段落</th><th>物件</th><th>圖形</th><th>顏色</th><th>大小</th><th>位置</th><th>對齊</th></tr></thead><tbody>
+      ${rows.map(r => `<tr><td class="small">${esc(r.sec)}</td><td>${esc(r.item)}</td><td>${esc(r.shape)}</td><td>${esc(r.color)}</td><td>${esc(r.size)}</td><td>${esc(r.pos)}</td><td>${esc(r.align)}</td></tr>`).join("")}</tbody></table></div>` : ""}</div>`;
+}
+
+/* ---------------- 批改 ---------------- */
+function review() {
+  const only = store("bp_onlyWait") !== false;
+  const L = DATA.logs.filter(l => l.code === WHO && (!only || l.status === "待批改")).reverse();
+  $("#body").innerHTML = `<div class="card"><div class="row"><label style="margin:0;color:var(--ink)">
+    <input type="checkbox" id="only" style="width:auto" ${only ? "checked" : ""}> 只看待批改</label></div>
+    ${L.map(l => `<details class="log"><summary>${statusTag(l.status)} <b>${esc(l.name)}</b>${l.year ? `<span class="muted">${l.year} 年</span>` : ""}
+      <span class="muted small">${l.time}｜用時 ${fmtSec(l.seconds)}（目標 ${drillOf(l.drill).target} 分）</span></summary>
+      ${l.type === "mock" ? `<p class="small">${MOCK_PHASES.map(p => `${p.name} ${fmtSec(l.phases[p.key] || 0)}`).join("｜")}</p>` : ""}
+      ${l.answer ? `<b>作答內容</b><pre>${esc(l.answer)}</pre>` : ""}
+      ${l.missing.length ? `<b>自評未完成的規格</b><ul>${l.missing.map(m => `<li>${esc(m)}</li>`).join("")}</ul>` : ""}
+      ${l.reflection ? `<b>選手自評</b><pre>${esc(l.reflection)}</pre>` : ""}
+      ${l.url ? `<p><a class="btn" href="${esc(l.url)}" target="_blank">開啟上傳的檔案</a></p>` : `<p class="muted small">沒有上傳檔案</p>`}
+      ${["D01", "M01"].includes(l.drill) ? `<details class="small" style="margin:6px 0"><summary class="muted">批改提示：檢查有沒有用到配色方案以外的顏色</summary>
+        <ol style="margin:6px 0">
+          <li>打開選手的檔案，對照他的風格卡色碼。</li>
+          <li>點選看起來可疑的物件 → 填滿色彩 → 其他色彩，看色碼是否在方案裡。</li>
+          <li>快速抽查法：另存一份副本，到 設計 → 變化 → 色彩 換成另一組佈景主題色。<b>有跟著變的</b>是從佈景主題色（含較淺、較深變化）選的；<b>沒變的</b>是滴管吸色或手動填色——這些要再看色碼是否在方案裡。</li>
+        </ol></details>` : ""}
+      <label>評語（選手看得到）</label><textarea data-c="${l.id}" style="min-height:80px">${esc(l.comment || "")}</textarea>
+      <p><button class="primary" data-s="通過" data-id="${l.id}">通過</button> <button data-s="再修" data-id="${l.id}">再修</button></p>
+    </details>`).join("") || `<p class="muted">沒有需要批改的紀錄 👍</p>`}</div>`;
+  $("#only").onchange = () => { store("bp_onlyWait", $("#only").checked); review(); };
+  $$("[data-s]").forEach(b => b.onclick = async () => {
+    const id = b.dataset.id, comment = $(`[data-c="${id}"]`).value;
+    b.disabled = true;
+    const r = await api("review", { tpin: TPIN, id, status: b.dataset.s, comment }).catch(() => ({ ok: false, msg: "連線失敗" }));
+    if (!r.ok) { b.disabled = false; return toast(r.msg, true); }
+    const l = DATA.logs.find(x => x.id === id); l.status = b.dataset.s; l.comment = comment;
+    toast("已儲存"); render();
+  });
+}
+
+/* ---------------- 指派任務 ---------------- */
+function task() {
+  const tomorrow = new Date(new Date(DATA.today).getTime() + 864e5).toISOString().slice(0, 10);
+  $("#body").innerHTML = `<div class="card"><h2>指派每日任務</h2>
+    <p class="muted small">同一天重複儲存會覆蓋。所有選手共用同一份每日任務。</p>
+    <div class="grid2"><div><label>日期</label><input type="date" id="d" value="${tomorrow}"></div>
+    <div><label>讀題拆解／全真模擬用哪一年</label><select id="y"><option value="">讓選手自己選</option>
+      ${EXAMS.map(e => `<option value="${e.year}">${e.year} 年｜${esc(e.title)}</option>`).join("")}</select></div></div>
+    <label>任務項目</label><div class="checklist">${DRILLS.map(d =>
+      `<label><input type="checkbox" value="${d.code}">${esc(d.name)}<span class="muted small">（${d.target} 分）</span></label>`).join("")}</div>
+    <label>給選手的備註</label><textarea id="n" style="min-height:70px" placeholder="例如：今天母片要壓到 30 分鐘內"></textarea>
+    <p><button class="primary" id="save">儲存</button></p></div>
+    <div class="card"><h2>已指派的任務</h2><table class="tbl"><thead><tr><th>日期</th><th>項目</th><th>年份</th><th>備註</th></tr></thead><tbody>
+    ${DATA.tasks.slice().sort((a, b) => b.date.localeCompare(a.date)).slice(0, 30).map(t =>
+      `<tr><td><a href="#" data-load="${t.date}">${t.date}</a></td><td>${String(t.codes).split(",").filter(Boolean).map(c => esc(drillOf(c).name)).join("<br>")}</td>
+       <td>${t.year || ""}</td><td>${esc(t.note || "")}</td></tr>`).join("")}</tbody></table></div>`;
+
+  const fill = date => {
+    const t = DATA.tasks.find(x => x.date === date);
+    const codes = t ? String(t.codes).split(",") : [];
+    $$(".checklist input").forEach(c => c.checked = codes.includes(c.value));
+    $("#y").value = t ? t.year : ""; $("#n").value = t ? t.note : "";
+  };
+  $("#d").onchange = () => fill($("#d").value); fill($("#d").value);
+  $$("[data-load]").forEach(a => a.onclick = e => { e.preventDefault(); $("#d").value = a.dataset.load; fill(a.dataset.load); window.scrollTo(0, 0); });
+  $("#save").onclick = async () => {
+    const codes = $$(".checklist input:checked").map(c => c.value);
+    if (!codes.length) return toast("至少選一項", true);
+    const body = { tpin: TPIN, date: $("#d").value, codes, year: $("#y").value, note: $("#n").value };
+    const r = await api("setTask", body).catch(() => ({ ok: false, msg: "連線失敗" }));
+    if (!r.ok) return toast(r.msg, true);
+    DATA.tasks = DATA.tasks.filter(x => x.date !== body.date).concat([{ date: body.date, codes: codes.join(","), year: body.year, note: body.note }]);
+    toast("已儲存"); task();
+  };
+}
+
+/* ---------------- 題庫 ---------------- */
+function bank() {
+  $("#body").innerHTML = EXAMS.map(e => `<div class="card"><h2>${e.year} 年｜${esc(e.title)}</h2>
+    <p class="muted small">${esc(e.role)}｜${esc(e.scoring)}｜${esc(e.pages)}</p>
+    <div class="chips">${e.tags.map(t => `<span>${esc(t)}</span>`).join("")}</div>
+    ${e.note ? `<div class="comment">${esc(e.note)}</div>` : ""}
+    <h3>必做規格</h3><ol>${e.specs.map(s => `<li>${esc(s)}</li>`).join("")}</ol></div>`).join("")
+    + `<div class="card"><h2>每年都要的通用規格</h2><ol>${COMMON_SPECS.map(s => `<li>${esc(s)}</li>`).join("")}</ol></div>`;
+}
+
+TPIN ? load() : showLogin();
+</script>
+</body>
+</html>
