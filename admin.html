@@ -133,7 +133,7 @@ function review() {
       ${l.answer ? `<b>作答內容</b><pre>${esc(l.answer)}</pre>` : ""}
       ${l.missing.length ? `<b>自評未完成的規格</b><ul>${l.missing.map(m => `<li>${esc(m)}</li>`).join("")}</ul>` : ""}
       ${l.reflection ? `<b>選手自評</b><pre>${esc(l.reflection)}</pre>` : ""}
-      ${l.url ? `<p><a class="btn primary" href="${esc(dlUrl(l.url))}" target="_blank" style="text-decoration:none">⬇ 下載檔案到電腦</a>
+      ${l.url ? `<p><button class="primary" data-dl="${esc(l.url)}">⬇ 下載檔案到電腦</button>
         <span class="muted small">下載後用 PowerPoint 打開，格式和動畫才不會跑掉（不要用 Google 簡報開）</span></p>` : `<p class="muted small">沒有上傳檔案</p>`}
       ${l.drill === "D00" ? `<div class="comment" style="border-color:var(--warn);margin:6px 0">📌 <b>這是選手的試做母片。</b>按「通過」後選手才能寫母片製作清單、練習 30 分鐘內重建；要他修改就按「再修」，並在評語寫下要改哪裡。</div>` : ""}
       ${["D00", "D01", "M01"].includes(l.drill) ? `<details class="small" style="margin:6px 0"><summary class="muted">批改提示：檢查有沒有用到配色方案以外的顏色</summary>
@@ -146,6 +146,15 @@ function review() {
       <p><button class="primary" data-s="通過" data-id="${l.id}">通過</button> <button data-s="再修" data-id="${l.id}">再修</button></p>
     </details>`).join("") || `<p class="muted">沒有需要批改的紀錄 👍</p>`}</div>`;
   $("#only").onchange = () => { store("bp_onlyWait", $("#only").checked); review(); };
+  $$("[data-dl]").forEach(b => b.onclick = async () => {
+    const t = b.textContent; b.disabled = true; b.textContent = "下載中…（檔案大會等比較久）";
+    const r = await api("file", { tpin: TPIN, url: b.dataset.dl }).catch(() => ({ ok: false, msg: "連線失敗" }));
+    b.disabled = false; b.textContent = t;
+    if (!r.ok) return toast(r.msg, true);
+    const bin = atob(r.data), u8 = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+    const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([u8], { type: r.type }));
+    a.download = r.name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+  });
   $$("[data-s]").forEach(b => b.onclick = async () => {
     const id = b.dataset.id, comment = $(`[data-c="${id}"]`).value;
     b.disabled = true;
