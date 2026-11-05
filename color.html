@@ -55,7 +55,10 @@
   .sb .sn { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; background: #e7ecf3; color: var(--muted); font-weight: 700; flex: none; font-size: 13px; }
   .sb .st { font-size: 14px; line-height: 1.3; } .sb small { display: block; color: var(--muted); font-size: 11px; }
   .sb.ok .sn { background: var(--good); color: #fff; } .sb.ok .st { color: var(--good); }
-  .sb.now { background: var(--main-2); } .sb.now .sn { background: var(--main); color: #fff; } .sb.now .st { font-weight: 700; }
+  .sb.here { background: var(--main-2); box-shadow: inset 0 0 0 2px var(--main); } .sb.here .st { font-weight: 700; }
+  .sb.now .sn { background: var(--main); color: #fff; }
+  .sb.lock { opacity: .55; } .sb.lock .sn { background: transparent; font-size: 14px; }
+  .nx { font-style: normal; font-size: 11px; background: var(--accent); color: #fff; border-radius: 99px; padding: 1px 7px; margin-left: 6px; vertical-align: 2px; }
   .sarr { align-self: center; color: #b8c2cf; font-size: 20px; }
   #steps { margin-bottom: 12px; }
   .ithumb { width: 64px; height: 48px; object-fit: cover; border-radius: 8px; border: 2px solid transparent; cursor: pointer; }
@@ -506,7 +509,7 @@ let wheelH; function wheelLater() { cancelAnimationFrame(wheelH); wheelH = reque
 async function loadProg() {
   if (!ME) return;
   const r = await api("progress", ME).catch(() => null);
-  if (r && r.ok) { PROG = r.logs; store("bp_prog", r.logs.filter(l => ["S01", "S02", "D01"].includes(l.drill)).map(l => ({ drill: l.drill, seconds: l.seconds, status: l.status }))); }
+  if (r && r.ok) { PROG = r.logs; store("bp_prog", r.logs.filter(l => ["S01", "S02", "D00", "D01"].includes(l.drill)).map(l => ({ drill: l.drill, seconds: l.seconds, status: l.status }))); }
 }
 
 function milestones() {
@@ -651,6 +654,13 @@ let RC = store("bp_recipe") || defaultRecipe();
 let RBLUR = false;
 function recipe() {
   const saveR = () => store("bp_recipe", RC);
+  if (!approved()) {
+    $("#body").innerHTML = `<div class="card"><h2>🔒 母片製作清單：老師確認後才能寫</h2>
+      <p>順序是：照風格卡<b>試做第一版母片</b>（不限時間）→ 上傳給老師 → <b>老師在後台按「通過」</b>後，再把最後確定的做法一項一項寫進這份清單，接著練習 30 分鐘內重建。</p>
+      <p class="muted small">老師按了「通過」之後，回到這頁重新整理就會開放。</p>
+      <p><a class="btn primary" href="index.html#go=D00" style="text-decoration:none;color:#fff">去試做第一版母片</a></p></div>`;
+    return;
+  }
   $("#body").innerHTML = `<div class="ref">💡 要在 20～30 分鐘內完美重製母片，<b>每一項都要背得清清楚楚</b>：色碼、用什麼物件、物件的顏色、大小、位置、對齊。把你的母片照製作順序記在這裡，練到不看清單也能做出一模一樣的母片。</div>
     <div class="card"><div class="row" style="justify-content:space-between"><h2 style="margin:0">我的母片製作清單</h2>
       <div class="row"><label style="margin:0;color:var(--ink)"><input type="checkbox" id="blur" style="width:auto" ${RBLUR ? "checked" : ""}> 默寫模式（遮住內容，點一下才顯示）</label></div></div>
@@ -762,25 +772,30 @@ function insp() {
 }
 
 /* ---------------- 母片養成步驟（每一頁最上方） ---------------- */
+function approved() { return (PROG || store("bp_prog") || []).some(l => l.drill === "D00" && l.status === "通過"); }
 function stepState() {
   const L = PROG || store("bp_prog") || [];
+  const d00 = L.filter(l => l.drill === "D00"), last00 = d00[d00.length - 1];
   const d01 = L.filter(l => l.drill === "D01"), last3 = d01.slice(-3);
-  const rcDone = (RC || []).filter(r => r.sec && !r.sec.startsWith("0.") && (r.item || "").trim() && !(r.item === "畫面外色票圈")).length >= 3;
+  const ok5 = approved();
+  const rcDone = (RC || []).filter(r => r.sec && !r.sec.startsWith("0.") && (r.item || "").trim() && r.item !== "畫面外色票圈").length >= 3;
   return [
     { k: "insp", n: "上傳靈感圖", ok: INSP.length > 0 || L.some(l => l.drill === "S01") },
     { k: "insp", n: "吸色定配色", ok: !!ST.picked },
     { k: "style", n: "形狀・字型・命名", ok: !!(ST.name && SAVED.some(s => s.shape)) },
-    { k: "style", n: "交給老師確認", ok: L.some(l => l.drill === "S02"), sub: (() => { const s = L.filter(l => l.drill === "S02").pop(); return s ? s.status : ""; })() },
-    { k: "recipe", n: "寫母片製作清單", ok: rcDone },
-    { k: "D01", n: "30 分鐘內重建 ×3", ok: last3.length === 3 && last3.every(l => l.seconds <= 1800), sub: last3.length ? last3.map(l => fmtSec(l.seconds)).join("、") : "" }
+    { k: "D00", n: "試做第一版母片", ok: d00.length > 0, sub: "不限時間，做完上傳" },
+    { k: "D00", n: "老師確認通過", ok: ok5, sub: last00 ? (last00.status === "再修" ? "老師請你再修" : last00.status === "通過" ? "" : "等老師看") : "" },
+    { k: "recipe", n: "寫母片製作清單", ok: ok5 && rcDone, lock: !ok5 },
+    { k: "D01", n: "30 分鐘內重建 ×3", ok: ok5 && last3.length === 3 && last3.every(l => l.seconds <= 1800), lock: !ok5,
+      sub: ok5 && last3.length ? last3.map(l => fmtSec(l.seconds)).join("、") : "" }
   ];
 }
 function stepper() {
   const S = stepState(), next = S.findIndex(s => !s.ok);
-  $("#steps").innerHTML = `<div class="stepbar">${S.map((s, i) => `<button class="sb ${s.ok ? "ok" : ""} ${i === next ? "now" : ""}" data-sk="${s.k}">
-    <span class="sn">${s.ok ? "✓" : i + 1}</span><span class="st">${s.n}${s.sub ? `<small>${esc(s.sub)}</small>` : ""}</span></button>`).join('<span class="sarr">›</span>')}</div>
-    ${next >= 0 ? `<p class="muted small" style="margin:6px 2px 0">下一步：<b>${S[next].n}</b>　｜　不知道怎麼配色？先看「色彩教學」或用「色環配色」找方向。</p>` : `<p class="good small" style="margin:6px 2px 0">母片風格已經背起來了，很棒！</p>`}`;
-  $$("[data-sk]").forEach(b => b.onclick = () => { const k = b.dataset.sk; if (k === "D01") return location.href = "index.html#go=D01"; TAB = k; render(); window.scrollTo(0, 0); });
+  $("#steps").innerHTML = `<div class="stepbar">${S.map((s, i) => `<button class="sb ${s.ok ? "ok" : ""} ${i === next ? "now" : ""} ${s.k === TAB ? "here" : ""} ${s.lock ? "lock" : ""}" data-sk="${s.k}">
+    <span class="sn">${s.ok ? "✓" : s.lock ? "🔒" : i + 1}</span><span class="st">${s.n}${i === next ? `<em class="nx">下一步</em>` : ""}${s.sub ? `<small>${esc(s.sub)}</small>` : ""}</span></button>`).join('<span class="sarr">›</span>')}</div>
+    <p class="muted small" style="margin:6px 2px 0">藍框＝你現在所在的頁面　｜　🔒＝老師確認通過後才開放　｜　不知道怎麼配色？先看「色彩教學」或用「色環配色」找方向。</p>`;
+  $$("[data-sk]").forEach(b => b.onclick = () => { const k = b.dataset.sk; if (k[0] === "D") return location.href = "index.html#go=" + k; TAB = k; render(); window.scrollTo(0, 0); });
 }
 
 /* ---------------- 畫面 ---------------- */

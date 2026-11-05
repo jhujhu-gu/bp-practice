@@ -126,3 +126,8 @@ a.btn.primary { background: var(--main); color: #fff; border-color: var(--main);
 .countdown { background: rgba(255,255,255,.2); color: #fff; border-radius: 99px; padding: 4px 14px; font-size: 14px; white-space: nowrap; margin-right: auto; margin-left: 12px; }
 .countdown b { font-size: 20px; margin: 0 2px; color: #FFE08A; }
 @media (max-width: 640px) { header { flex-wrap: wrap; } .countdown { order: 3; margin: 6px 0 0; width: 100%; text-align: center; } }
+
+.stylemini { border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; margin-top: 12px; background: rgba(255,255,255,.6); }
+.mchips { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 8px; }
+.mchip { display: grid; grid-template-columns: 34px auto; column-gap: 6px; align-items: center; font-size: 12px; }
+.mchip i { grid-row: span 2; width: 34px; height: 34px; border-radius: 8px; border: 1px solid #ccc; } .mchip span { color: var(--muted); font-family: monospace; }

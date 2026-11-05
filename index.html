@@ -82,7 +82,7 @@ function renderHome(r, stale) {
       const d = drillOf(c), done = doneSet.has(c);
       return `<div class="task ${done ? "done" : ""}"><div class="row" style="flex-wrap:nowrap">
         <span class="check">${done ? "✓" : ""}</span>
-        <div><div class="t">${esc(d.name)}</div><div class="s">目標 ${d.target} 分鐘${(d.type !== "drill" && r.task.year) ? `｜${r.task.year} 年題目` : ""}</div></div></div>
+        <div><div class="t">${esc(d.name)}</div><div class="s">${tgtText(d)}${(d.type !== "drill" && r.task.year) ? `｜${r.task.year} 年題目` : ""}</div></div></div>
         <button class="${done ? "" : "primary"}" data-go="${c}">${done ? "再練一次" : "開始"}</button></div>`;
     }).join("")}</div>
     ${r.task.note ? `<div class="comment"><b>老師備註：</b>${esc(r.task.note)}</div>` : ""}
@@ -101,8 +101,9 @@ function renderHome(r, stale) {
       <ol class="route">
         <li><a href="color.html#insp">靈感吸色</a><span class="muted small">上傳喜歡的作品，直接在圖上吸色組出配色</span></li>
         <li><a href="color.html#style">母片風格卡</a><span class="muted small">形狀語言＋字型＋命名，交給老師確認</span></li>
-        <li><a href="color.html#recipe">母片製作清單</a><span class="muted small">每個物件的顏色、大小、位置都記下來</span></li>
-        <li><a href="#" data-route="D01">從零建好母片</a><span class="muted small">照風格卡在投影片母片從零建立</span></li>
+        <li><a href="#" data-route="D00">試做第一版母片</a><span class="muted small">不限時間，做完上傳給老師確認</span></li>
+        <li><a href="color.html#recipe">母片製作清單</a><span class="muted small">老師確認後，把每個物件的做法記下來</span></li>
+        <li><a href="#" data-route="D01">從零重建母片</a><span class="muted small">照製作清單練到 30 分鐘內</span></li>
         <li><a href="#" data-route="M01">全真模擬</a><span class="muted small">完整考古題，每份至少 2 次</span></li>
       </ol><p class="muted small" style="margin:6px 0 0">配色沒方向時，先看 <a href="color.html#learn">色彩教學</a>、<a href="color.html#wheel">色環配色</a>。</p></div>
     <div class="card"><h2>參考資料</h2><p class="muted small">每年都會考的格式要求（日期頁碼、圖片壓縮、存檔等）、常用快捷鍵，以及得獎作品的觀察重點。需要時點開看。</p>
@@ -110,7 +111,7 @@ function renderHome(r, stale) {
     <div class="card"><h2>配色與母片設計</h2><p class="muted small">色彩教學、色環配色、母片風格、圖形範例。目標：做出你自己的母片風格並背起來。</p>
       <p class="row"><a class="btn primary" href="color.html" style="text-decoration:none">進入配色練習</a><a class="btn" href="color.html#style" style="text-decoration:none">我的母片風格</a></p></div>
     <div class="card"><h2>自選練習</h2><div class="pick">${DRILLS.map(d =>
-      `<button data-go="${d.code}"><b>${esc(d.name)}</b><div class="muted small">目標 ${d.target} 分鐘</div></button>`).join("")}</div></div>
+      `<button data-go="${d.code}"><b>${esc(d.name)}</b><div class="muted small">${tgtText(d)}</div></button>`).join("")}</div></div>
     </div></div>`;
 
   $$("[data-route]").forEach(b => b.onclick = e => { e.preventDefault();
@@ -133,6 +134,14 @@ function myPal() {
   return { bg: p.bg || "#FFFFFF", text: p.text || "#2B2B2B", text2: p.text2 || "#6B7280", colors, acc };
 }
 const cName = (i, p) => i === 0 ? "主色" : i === p.acc ? "強調色" : "色彩 " + (i + 1);
+/* 計時中一直顯示的風格卡色碼（避免忘記自己選了什麼） */
+function styleMini() {
+  const st = store("bp_style"), p = myPal(); if (!st || !p) return "";
+  const chip = (c, n) => `<div class="mchip"><i style="background:${c}"></i><b>${n}</b><span>${c}</span></div>`;
+  return `<div class="stylemini"><div class="row" style="justify-content:space-between"><b>我的風格卡：${esc(st.name || "未命名")}</b>
+    <span class="muted small">${SHAPE_NAMES[st.shape] || ""}・${FONT_NAMES[st.font] || ""}</span></div>
+    <div class="mchips">${chip(p.bg, "背景")}${chip(p.text, "主文字")}${chip(p.text2, "次要文字")}${p.colors.map((c, k) => chip(c, cName(k, p))).join("")}</div></div>`;
+}
 function styleCardHtml() {
   const st = store("bp_style"), p = myPal();
   if (!st || !st.name || !p) return `<div class="comment" style="border-color:var(--warn)"><b class="warn">你還沒有風格卡。</b>
@@ -157,6 +166,22 @@ function styleCardText() {
 
 /* 全真模擬分段順序（讀題與建母片可以交換） */
 const PH = () => ((RUN && RUN.order) || MOCK_PHASES.map(p => p.key)).map(k => MOCK_PHASES.find(p => p.key === k));
+
+/* 從零重建母片：要等老師確認過試做母片（D00 通過）才能開始 */
+async function checkApproved() {
+  const btn = $("#startBtn"), box = $("#lockBox"); if (!btn) return;
+  const ok = L => (L || []).some(l => l.drill === "D00" && l.status === "通過");
+  const cached = (store("bp_progress") || {}).logs;
+  if (ok(cached)) return;
+  btn.disabled = true; box.innerHTML = `<p class="muted small">確認老師是否已通過你的試做母片…</p>`;
+  const r = await api("progress", ME);
+  if (r.ok) { try { store("bp_progress", r); } catch (e) {} }
+  if (!$("#lockBox")) return;
+  if (r.ok && ok(r.logs)) { btn.disabled = false; box.innerHTML = ""; return; }
+  box.innerHTML = `<div class="comment" style="border-color:var(--warn)">🔒 <b>還不能開始。</b>先完成「試做第一版母片」並上傳，等老師在後台按「通過」後，再寫母片製作清單、練習 30 分鐘內重建。
+    <p><button class="primary" id="goD00">去試做第一版母片</button></p></div>`;
+  $("#goD00").onclick = () => { RUN = null; unstore("bp_run"); beginPractice("D00", ""); };
+}
 
 /* ---------------- 練習流程 ---------------- */
 function beginPractice(code, year) {
@@ -206,7 +231,7 @@ function showPractice() {
 
   if (RUN.stage === "brief" && d.type === "drill") {
     app.innerHTML = `<div class="card"><h2>${esc(d.name)}</h2>
-      <p class="muted">目標時間 <b>${d.target} 分鐘</b>｜按「開始計時」後才開始算</p>
+      <p class="muted"><b>${tgtText(d)}</b>｜按「開始計時」後才開始算</p>
       <h3>任務</h3><p>${esc(d.goal || "")}</p>
       ${d.useStyle ? styleCardHtml() : ""}
       ${d.table ? `<h3>素材${d.material ? `<span class="muted small">（${esc(d.material)}）</span>` : ""}</h3>
@@ -214,7 +239,9 @@ function showPractice() {
         : d.material ? `<h3>素材</h3><p>${esc(d.material)}</p>` : ""}
       ${d.tips ? `<h3>操作提示</h3><ol class="tips">${d.tips.map(t => `<li>${esc(t)}</li>`).join("")}</ol>` : ""}
       ${d.pass ? `<h3>合格標準</h3><ul class="passlist">${d.pass.map(t => `<li>${esc(t)}</li>`).join("")}</ul>` : ""}
+      <div id="lockBox"></div>
       <p><button class="primary big" id="startBtn">開始計時</button> <button id="back">回首頁</button></p></div>`;
+    if (d.needApproved) checkApproved();
     $("#startBtn").onclick = () => { RUN.stage = "timer"; RUN.startAt = Date.now(); save(); showPractice(); };
     $("#back").onclick = () => { RUN = null; unstore("bp_run"); showHome(); };
     return;
@@ -252,7 +279,7 @@ function showPractice() {
     const isMock = d.type === "mock", isRead = d.type === "read";
     app.innerHTML = `<div class="card"><h2>${esc(d.name)}${ex ? `｜${ex.year} 年` : ""}</h2>
       <div class="timer" id="clock">00:00</div>
-      <p class="center muted">目標 ${d.target} 分鐘</p>
+      <p class="center muted">${tgtText(d)}</p>
       ${isMock ? `<div class="phases">${PH().map((p, i) => `<div class="phase" id="ph${i}"><div class="n">${p.name}（${p.target} 分）</div><div class="v" id="pv${i}">00:00</div></div>`).join("")}</div>` : ""}
       <p class="center">
         <button class="big" id="pause"></button>
@@ -261,6 +288,7 @@ function showPractice() {
       ${isRead ? `<label>① 必做規格清單（一行一項）</label><textarea id="ansA">${esc(RUN.ansA || "")}</textarea>
                   <label>② 簡報大綱：每頁一行「頁面標題｜這頁要傳達的重點」</label><textarea id="ansB" style="min-height:200px">${esc(RUN.ansB || "")}</textarea>` : ""}
     </div>`;
+    if (d.useStyle) app.querySelector(".card").insertAdjacentHTML("beforeend", styleMini());
     if (d.pass) app.querySelector(".card").insertAdjacentHTML("beforeend", `<details style="margin-top:10px"><summary class="muted">看任務與合格標準</summary>
       <p>${esc(d.goal || "")}</p><ul class="passlist">${d.pass.map(t => `<li>${esc(t)}</li>`).join("")}</ul></details>`);
     if (isRead) ["#ansA", "#ansB"].forEach(s => $(s).oninput = () => { RUN[s.slice(1)] = $(s).value; save(); });
@@ -268,7 +296,7 @@ function showPractice() {
     const paint = () => {
       const e = elapsed();
       $("#clock").textContent = fmtSec(e);
-      $("#clock").classList.toggle("over", e > d.target * 60);
+      $("#clock").classList.toggle("over", !!d.target && e > d.target * 60);
       $("#pause").textContent = RUN.startAt ? "暫停" : "繼續";
       if (isMock) PH().forEach((p, i) => {
         $("#pv" + i).textContent = fmtSec(phaseElapsed(i));
@@ -300,7 +328,7 @@ function showPractice() {
 
   if (RUN.stage === "submit") {
     const isMock = d.type === "mock", isRead = d.type === "read";
-    const hit = RUN.acc <= d.target * 60;
+    const hit = !!d.target && RUN.acc <= d.target * 60;
     let checks = d.pass ? `<h3>對照合格標準：有做到的請打勾</h3><div class="checklist">${d.pass.map(s =>
         `<label><input type="checkbox" data-spec="${esc(s)}">${esc(s)}</label>`).join("")}</div>` : "";
     if (isRead) checks = `<h3>對照標準規格：你有寫到的請打勾</h3><div class="checklist">${ex.specs.filter(s => !/日期|頁碼|壓縮|三種檔案/.test(s)).map((s, i) =>
@@ -311,7 +339,7 @@ function showPractice() {
         <p class="muted small">每年都要的通用項目</p>${COMMON_SPECS.map(s => `<label><input type="checkbox" data-spec="${esc(s)}">${esc(s)}</label>`).join("")}</div>`;
 
     app.innerHTML = `<div class="card"><h2>${esc(d.name)}${ex ? `｜${ex.year} 年` : ""}</h2>
-      <p>用時 <b class="${hit ? "good" : "warn"}">${fmtSec(RUN.acc)}</b>（目標 ${d.target} 分鐘）${hit ? "　達標！" : ""}</p>
+      <p>用時 <b class="${hit ? "good" : "warn"}">${fmtSec(RUN.acc)}</b>（${tgtText(d)}）${hit ? "　達標！" : ""}</p>
       ${isMock ? `<div class="phases">${PH().map(p => { const v = RUN.phaseAcc[p.key] || 0;
         return `<div class="phase"><div class="n">${p.name}（${p.target} 分）</div><div class="v ${v > p.target * 60 ? "warn" : ""}">${fmtSec(v)}</div></div>`; }).join("")}</div>` : ""}
       ${checks}

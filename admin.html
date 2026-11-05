@@ -116,14 +116,14 @@ function review() {
   $("#body").innerHTML = `<div class="card"><div class="row"><label style="margin:0;color:var(--ink)">
     <input type="checkbox" id="only" style="width:auto" ${only ? "checked" : ""}> 只看待批改</label></div>
     ${L.map(l => `<details class="log"><summary>${statusTag(l.status)} <b>${esc(l.name)}</b>${l.year ? `<span class="muted">${l.year} 年</span>` : ""}
-      <span class="muted small">${l.time}｜用時 ${fmtSec(l.seconds)}（目標 ${drillOf(l.drill).target} 分）</span></summary>
+      <span class="muted small">${l.time}｜用時 ${fmtSec(l.seconds)}（${tgtText(drillOf(l.drill))}）</span></summary>
       ${l.type === "mock" ? `<p class="small">${MOCK_PHASES.map(p => `${p.name} ${fmtSec(l.phases[p.key] || 0)}`).join("｜")}</p>` : ""}
       ${l.answer ? `<b>作答內容</b><pre>${esc(l.answer)}</pre>` : ""}
       ${l.missing.length ? `<b>自評未完成的規格</b><ul>${l.missing.map(m => `<li>${esc(m)}</li>`).join("")}</ul>` : ""}
       ${l.reflection ? `<b>選手自評</b><pre>${esc(l.reflection)}</pre>` : ""}
       ${l.url ? `<p><a class="btn primary" href="${esc(dlUrl(l.url))}" target="_blank" style="text-decoration:none">⬇ 下載檔案到電腦</a>
         <span class="muted small">下載後用 PowerPoint 打開，格式和動畫才不會跑掉（不要用 Google 簡報開）</span></p>` : `<p class="muted small">沒有上傳檔案</p>`}
-      ${["D01", "M01"].includes(l.drill) ? `<details class="small" style="margin:6px 0"><summary class="muted">批改提示：檢查有沒有用到配色方案以外的顏色</summary>
+      ${["D00", "D01", "M01"].includes(l.drill) ? `<details class="small" style="margin:6px 0"><summary class="muted">批改提示：檢查有沒有用到配色方案以外的顏色</summary>
         <ol style="margin:6px 0">
           <li>打開選手的檔案，對照他的風格卡色碼。</li>
           <li>點選看起來可疑的物件 → 填滿色彩 → 其他色彩，看色碼是否在方案裡。</li>
@@ -152,7 +152,7 @@ function task() {
     <div><label>讀題拆解／全真模擬用哪一年</label><select id="y"><option value="">讓選手自己選</option>
       ${EXAMS.map(e => `<option value="${e.year}">${e.year} 年｜${esc(e.title)}</option>`).join("")}</select></div></div>
     <label>任務項目</label><div class="checklist">${DRILLS.map(d =>
-      `<label><input type="checkbox" value="${d.code}">${esc(d.name)}<span class="muted small">（${d.target} 分）</span></label>`).join("")}</div>
+      `<label><input type="checkbox" value="${d.code}">${esc(d.name)}<span class="muted small">（${d.target ? d.target + " 分" : "不限時間"}）</span></label>`).join("")}</div>
     <label>給選手的備註</label><textarea id="n" style="min-height:70px" placeholder="例如：今天母片要壓到 30 分鐘內"></textarea>
     <p><button class="primary" id="save">儲存</button></p></div>
     <div class="card"><h2>已指派的任務</h2><table class="tbl"><thead><tr><th>日期</th><th>項目</th><th>年份</th><th>備註</th></tr></thead><tbody>

@@ -32,6 +32,7 @@ function fmtSec(s) {
 }
 const fmtMin = s => (Math.round((s || 0) / 6) / 10) + " 分";
 
+const tgtText = d => d.target ? `目標 ${d.target} 分鐘` : "不限時間";
 function drillOf(code) { return DRILLS.find(d => d.code === code) || { code, name: code, target: 0, type: "drill" }; }
 function examOf(year) { return EXAMS.find(e => String(e.year) === String(year)); }
 
@@ -124,12 +125,12 @@ function heatGrid(logs, days = 28) {
 function drillTable(logs) {
   const rows = DRILLS.filter(d => d.type === "drill").map(d => {
     const L = logs.filter(l => l.drill === d.code && l.seconds > 0);
-    if (!L.length) return `<tr><td>${esc(d.name)}</td><td>${d.target} 分</td><td colspan="3" class="muted">尚未練習</td></tr>`;
+    if (!L.length) return `<tr><td>${esc(d.name)}</td><td>${d.target ? d.target + " 分" : "不限"}</td><td colspan="3" class="muted">尚未練習</td></tr>`;
     const best = Math.min(...L.map(l => l.seconds)), last = L[L.length - 1].seconds;
-    const hit = last <= d.target * 60;
+    const hit = !d.target || last <= d.target * 60;
     const max = Math.max(...L.map(l => l.seconds), d.target * 60);
-    const bars = L.slice(-8).map(l => `<i style="height:${Math.max(8, l.seconds / max * 100)}%" class="${l.seconds <= d.target * 60 ? "ok" : ""}" title="${l.date} ${fmtSec(l.seconds)}"></i>`).join("");
-    return `<tr><td>${esc(d.name)}<div class="muted small">${L.length} 次</div></td><td>${d.target} 分</td>
+    const bars = L.slice(-8).map(l => `<i style="height:${Math.max(8, l.seconds / max * 100)}%" class="${!d.target || l.seconds <= d.target * 60 ? "ok" : ""}" title="${l.date} ${fmtSec(l.seconds)}"></i>`).join("");
+    return `<tr><td>${esc(d.name)}<div class="muted small">${L.length} 次</div></td><td>${d.target ? d.target + " 分" : "不限"}</td>
       <td>${fmtSec(best)}</td><td class="${hit ? "good" : "warn"}">${fmtSec(last)}</td><td><div class="bars">${bars}</div></td></tr>`;
   }).join("");
   return `<table class="tbl"><thead><tr><th>關卡</th><th>目標</th><th>最佳</th><th>最近</th><th>最近 8 次</th></tr></thead><tbody>${rows}</tbody></table>`;
