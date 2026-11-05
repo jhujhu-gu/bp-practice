@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>商業簡報練習</title>
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=20261105">
 </head>
 <body>
 <header>
@@ -17,8 +17,20 @@
 </header>
 <main id="app"></main>
 
-<script src="bank.js"></script>
-<script src="common.js"></script>
+<script>
+/* 有程式錯誤時顯示提示，不會整頁卡住沒反應 */
+function showErr(e) {
+  if (document.getElementById("errBox")) return;
+  const d = document.createElement("div"); d.id = "errBox";
+  d.style.cssText = "position:fixed;left:50%;top:16px;transform:translateX(-50%);z-index:9999;max-width:560px;background:#fff;border:2px solid #E53935;border-radius:12px;padding:14px 18px;box-shadow:0 6px 24px rgba(0,0,0,.18);font-size:15px;line-height:1.6";
+  d.innerHTML = "<b style='color:#E53935'>系統載入發生錯誤</b><br>通常是瀏覽器還留著舊版檔案。請按 <b>Ctrl＋F5</b>（Mac：Cmd＋Shift＋R）強制重新整理；還是不行就請老師確認 GitHub 上的檔案都已更新。<br><small style='color:#888'>錯誤訊息：" + String(e.message || "").replace(/</g, "&lt;") + "</small><br><button style='margin-top:8px;padding:6px 14px;border-radius:8px;border:0;background:#3B7DD8;color:#fff;cursor:pointer' onclick='location.replace(location.pathname+\"?r=\"+Date.now())'>重新載入</button>";
+  (document.body || document.documentElement).appendChild(d);
+}
+window.addEventListener("error", e => showErr(e));
+window.addEventListener("unhandledrejection", e => showErr({ message: (e.reason && e.reason.message) || String(e.reason) }));
+</script>
+<script src="bank.js?v=20261105"></script>
+<script src="common.js?v=20261105"></script>
 <script>
 let ME = store("bp_me");           // {code, pin}
 let RUN = store("bp_run");         // 進行中的練習（重新整理也不會中斷計時）
