@@ -2,7 +2,7 @@
  * 共用設定與工具
  * 部署 Apps Script 後，把網址貼到 API_URL
  * ========================================================= */
-const API_URL = "請貼上 Apps Script 網頁應用程式網址";
+const API_URL = "https://script.google.com/macros/s/AKfycbwawlLleZENS5owIkyjD9cH291PIHpTQWWOftCDza0cgZ9_dzOM55RY9hW6KwJWxwTy/exec";
 
 async function api(action, data = {}) {
   const res = await fetch(API_URL, {
