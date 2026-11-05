@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>商業簡報練習</title>
-<link rel="stylesheet" href="style.css?v=20261105c">
+<link rel="stylesheet" href="style.css?v=20261105d">
 </head>
 <body>
 <header>
@@ -29,8 +29,8 @@ function showErr(e) {
 window.addEventListener("error", e => showErr(e));
 window.addEventListener("unhandledrejection", e => showErr({ message: (e.reason && e.reason.message) || String(e.reason) }));
 </script>
-<script src="bank.js?v=20261105c"></script>
-<script src="common.js?v=20261105c"></script>
+<script src="bank.js?v=20261105d"></script>
+<script src="common.js?v=20261105d"></script>
 <script>
 let ME = store("bp_me");           // {code, pin}
 let RUN = store("bp_run");         // 進行中的練習（重新整理也不會中斷計時）
@@ -416,11 +416,11 @@ function showPractice() {
 async function showProgress() {
   stopTick(); nav(true);
   const cached = store("bp_progress");
-  if (cached) renderProgress(cached); else app.innerHTML = `<div class="card"><p class="muted">載入中…</p></div>`;
+  if (cached) renderProgress(cached); else app.innerHTML = `<div class="card" id="progLoading"><p class="muted">載入中…</p></div>`;
   const r = await api("progress", ME);
   if (!r.ok) { if (!cached) app.innerHTML = `<div class="card">${esc(r.msg)}</div>`; return; }
   try { store("bp_progress", r); } catch (e) {}
-  if ($("#progMark")) renderProgress(r);
+  if ($("#progMark") || $("#progLoading")) renderProgress(r);
 }
 function renderProgress(r) {
   const L = r.logs;

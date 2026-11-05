@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>配色與母片設計｜商業簡報練習</title>
-<link rel="stylesheet" href="style.css?v=20261105c">
+<link rel="stylesheet" href="style.css?v=20261105d">
 <style>
   main { max-width: 1180px; }
   .layout { display: grid; grid-template-columns: 300px 1fr; gap: 14px; align-items: start; }
@@ -83,8 +83,8 @@ function showErr(e) {
 window.addEventListener("error", e => showErr(e));
 window.addEventListener("unhandledrejection", e => showErr({ message: (e.reason && e.reason.message) || String(e.reason) }));
 </script>
-<script src="bank.js?v=20261105c"></script>
-<script src="common.js?v=20261105c"></script>
+<script src="bank.js?v=20261105d"></script>
+<script src="common.js?v=20261105d"></script>
 <script>
 /* ---------------- 色彩工具 ---------------- */
 const hex2rgb = h => { h = h.replace("#", ""); if (h.length === 3) h = h.split("").map(x => x + x).join(""); return [0, 2, 4].map(i => parseInt(h.substr(i, 2), 16)); };
