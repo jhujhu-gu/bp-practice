@@ -184,3 +184,66 @@ document.addEventListener("DOMContentLoaded", () => {
   f.innerHTML = `<span>${CREDIT}</span>`;
   document.body.appendChild(f);
 });
+
+/* ---------------- 母片養成 7 步驟（選手首頁、配色頁、老師後台共用同一套規則） ----------------
+ * 需要老師確認的步驟，老師按「通過」才算完成（打勾）；
+ * 已上傳還沒批改＝等老師（⏳）；老師按「再修」＝要修改（↻），並帶出老師評語。
+ * L：練習紀錄（S01/S03/D00/D01）；loc：{ insp, picked, style, recipe } 選手自己完成的步驟 */
+function masterFlow(L, loc) {
+  L = L || []; loc = loc || {};
+  const of = c => L.filter(l => l.drill === c), lastOf = a => a[a.length - 1];
+  const D0 = of("D00"), last0 = lastOf(D0), S3 = of("S03"), lastS3 = lastOf(S3);
+  const D1 = of("D01"), last1 = lastOf(D1), last3 = D1.slice(-3);
+  const approved = !!last0 && D0.some(l => l.status === "通過") && last0.status !== "再修";
+  const moved = D0.length > 0;   // 已經交過試做母片，前面三步一定做過了（老師端也能正確顯示）
+  const S = [
+    { k: "insp", n: "上傳靈感圖", st: moved || loc.insp || L.some(l => l.drill === "S01") ? "ok" : "todo" },
+    { k: "insp", n: "吸色定配色", st: moved || loc.picked ? "ok" : "todo" },
+    { k: "style", n: "形狀・字型・命名", st: moved || loc.style ? "ok" : "todo" }];
+  const s4 = { k: "D00", n: "試做第一版母片" }, s5 = { k: "D00", n: "老師確認通過" };
+  if (approved) { s4.st = "ok"; s5.st = "ok"; s5.sub = "老師已通過"; }
+  else if (!last0) { s4.st = "todo"; s4.sub = "不限時間，做完上傳"; s5.st = "todo"; }
+  else if (last0.status === "再修") { s4.st = "redo"; s4.sub = "老師請你再修"; s4.comment = last0.comment; s5.st = "todo"; s5.sub = "修好再上傳一次"; }
+  else { s4.st = "wait"; s4.sub = "已上傳，等老師看"; s5.st = "wait"; s5.sub = "老師還沒看"; }
+  const s6 = { k: "recipe", n: "寫母片製作清單" };
+  if (!approved) s6.st = "lock";
+  else if (lastS3 && lastS3.status === "再修") { s6.st = "redo"; s6.sub = "老師請你修改清單"; s6.comment = lastS3.comment; }
+  else if (loc.recipe) { s6.st = "ok"; s6.sub = lastS3 ? (lastS3.status === "通過" ? "老師看過了" : "已交給老師") : ""; }
+  else s6.st = "todo";
+  const s7 = { k: "D01", n: "30 分鐘內重建 ×3" }, times = last3.map(l => fmtSec(l.seconds)).join("、");
+  const fast3 = last3.length === 3 && last3.every(l => l.seconds <= 1800);
+  if (!approved) s7.st = "lock";
+  else if (last1 && last1.status === "再修") { s7.st = "redo"; s7.sub = "最近一次老師請你再修"; s7.comment = last1.comment; }
+  else if (fast3 && last3.every(l => l.status === "通過")) { s7.st = "ok"; s7.sub = times; }
+  else if (fast3) { s7.st = "wait"; s7.sub = "3 次都在 30 分內，等老師確認"; }
+  else { s7.st = "todo"; s7.sub = last3.length ? "最近：" + times : "要連續 3 次 30 分鐘內"; }
+  S.push(s4, s5, s6, s7);
+  const cur = S.findIndex(s => s.st !== "ok");
+  return { steps: S, approved, cur, done: S.filter(s => s.st === "ok").length };
+}
+/* 目前進度的說明（告訴選手現在卡在哪、該做什麼） */
+function flowMsg(f) {
+  if (f.cur < 0) return `<div class="fmsg ok">🎉 <b>母片已經背起來了！</b>七個步驟都完成，接下來專心練全真模擬，比賽前每週再重建一次母片保持手感。</div>`;
+  const s = f.steps[f.cur], no = `第 ${f.cur + 1} 步「${s.n}」`;
+  const redo = f.steps.find(x => x.st === "redo");
+  if (redo) return `<div class="fmsg redo">↻ <b>老師請你修改：${esc(redo.n)}</b>${redo.comment ? `<div class="fq">老師評語：${esc(redo.comment)}</div>` : ""}
+    <div class="small">照評語修改後再送一次，老師按「通過」才算完成。</div></div>`;
+  if (s.st === "wait") return `<div class="fmsg wait">⏳ <b>${no}：等老師確認中</b><div class="small">${s.k === "D01" ? "老師確認這 3 次都沒問題後，才算背起來。" : "老師按「通過」後，才會開放「寫母片製作清單」和「30 分鐘內重建」。等待時可以先看色彩教學、練其他速度關卡。"}</div></div>`;
+  return `<div class="fmsg">👉 <b>下一步：${no}</b>${s.sub ? `<span class="small muted">　${esc(s.sub)}</span>` : ""}</div>`;
+}
+/* 進度條＋步驟列 */
+function flowBar(f, here) {
+  const icon = (s, i) => ({ ok: "✓", wait: "⏳", redo: "↻", lock: "🔒" }[s.st] || i + 1);
+  const pct = Math.round(f.done / f.steps.length * 100);
+  return `<div class="fprog"><div class="fbar"><i style="width:${pct}%"></i></div><span>完成 ${f.done} / ${f.steps.length} 步</span></div>
+    <div class="stepbar">${f.steps.map((s, i) => `<button class="sb ${s.st} ${i === f.cur ? "now" : ""} ${s.k === here ? "here" : ""}" data-sk="${s.k}">
+    <span class="sn">${icon(s, i)}</span><span class="st">${s.n}${i === f.cur ? `<em class="nx">${s.st === "wait" ? "等老師" : s.st === "redo" ? "要修改" : "下一步"}</em>` : ""}${s.sub ? `<small>${esc(s.sub)}</small>` : ""}</span></button>`).join('<span class="sarr">›</span>')}</div>
+    ${flowMsg(f)}`;
+}
+/* 選手自己完成的步驟（從這台電腦／雲端的資料判斷） */
+function flowLocal() {
+  const st = store("bp_style") || {}, saved = store("bp_palettes") || [], insp = store("bp_insp") || [];
+  const rc = store("bp_recipe") || [];
+  return { insp: insp.length > 0, picked: !!st.picked, style: !!(st.name && saved.some(x => x.shape)),
+    recipe: rc.filter(r => r.sec && !r.sec.startsWith("0.") && (r.item || "").trim() && r.item !== "畫面外色票圈").length >= 3 };
+}

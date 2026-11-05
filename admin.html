@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>商業簡報練習｜老師後台</title>
-<link rel="stylesheet" href="style.css?v=20261105">
+<link rel="stylesheet" href="style.css?v=20261105c">
 </head>
 <body>
 <header><h1>老師後台</h1>
@@ -24,8 +24,8 @@ function showErr(e) {
 window.addEventListener("error", e => showErr(e));
 window.addEventListener("unhandledrejection", e => showErr({ message: (e.reason && e.reason.message) || String(e.reason) }));
 </script>
-<script src="bank.js?v=20261105"></script>
-<script src="common.js?v=20261105"></script>
+<script src="bank.js?v=20261105c"></script>
+<script src="common.js?v=20261105c"></script>
 <script>
 let TPIN = store("bp_tpin");
 let DATA = null, TAB = "overview", WHO = "";
@@ -91,6 +91,7 @@ function overview() {
       <div class="stat"><div class="n">今日任務</div><div class="v">${todayCodes.filter(c => doneToday.has(c)).length}/${todayCodes.length}</div></div>
       <div class="stat"><div class="n">最後練習</div><div class="v" style="font-size:16px">${last ? last.date : "—"}</div></div></div>
       <h3>練習熱度</h3>${heatGrid(L)}</div>
+    ${flowBox(L)}
     <div class="card"><h2>考古題全真模擬進度</h2><p class="muted small">每份至少 2 次；選手做完後要在「批改」按通過或再修，他才能做下一次。</p>${examGrid(L, false)}</div>
     <div class="card"><h2>速度關卡進步情形</h2><p class="muted small">綠色＝達到目標時間</p>${drillTable(L)}</div>
     <div class="card"><h2>全真模擬：時間花在哪裡</h2>${mocks.length ? `<table class="tbl"><thead><tr><th>日期</th><th>年份</th>
@@ -100,6 +101,18 @@ function overview() {
       </tbody></table>` : `<p class="muted">還沒有全真模擬紀錄</p>`}</div>
     <div class="card"><h2>常漏規格排行</h2>${missingRank(L)}</div>
     ${styleCardBox()}`;
+}
+
+/* 選手的母片養成進度（和選手看到的是同一套規則） */
+function flowBox(L) {
+  const d = (DATA.sdata || {})[WHO] || {}; const J = k => { try { return JSON.parse(d[k]); } catch (e) { return null; } };
+  const st = J("bp_style") || {}, saved = J("bp_palettes") || [], rc = J("bp_recipe") || [];
+  const f = masterFlow(L, { picked: !!st.picked, style: !!(st.name && saved.some(x => x.shape)),
+    recipe: rc.filter(r => r.sec && !r.sec.startsWith("0.") && (r.item || "").trim() && r.item !== "畫面外色票圈").length >= 3 });
+  const wait = L.filter(l => ["D00", "S03", "D01"].includes(l.drill) && l.status === "待批改").length;
+  return `<div class="card"><h2>母片養成進度</h2><p class="muted small">和選手畫面看到的一樣。試做母片要你按「通過」，選手才能寫製作清單、練 30 分鐘內重建；按「再修」會鎖回去，並把評語顯示給選手。</p>
+    ${wait ? `<div class="fmsg wait">⏳ 有 <b>${wait}</b> 筆母片相關的作品等你批改 → 到「批改」處理</div>` : ""}
+    <div class="flowview">${flowBar(f, "")}</div></div>`;
 }
 
 /* 選手存在雲端的風格卡與母片製作清單（批改時對照色碼用） */
@@ -157,6 +170,7 @@ function review() {
   });
   $$("[data-s]").forEach(b => b.onclick = async () => {
     const id = b.dataset.id, comment = $(`[data-c="${id}"]`).value;
+    if (b.dataset.s === "再修" && !comment.trim()) { toast("按「再修」請在評語寫下要改哪裡，選手才知道怎麼修", true); $(`[data-c="${id}"]`).focus(); return; }
     b.disabled = true;
     const r = await api("review", { tpin: TPIN, id, status: b.dataset.s, comment }).catch(() => ({ ok: false, msg: "連線失敗" }));
     if (!r.ok) { b.disabled = false; return toast(r.msg, true); }

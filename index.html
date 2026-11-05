@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>商業簡報練習</title>
-<link rel="stylesheet" href="style.css?v=20261105">
+<link rel="stylesheet" href="style.css?v=20261105c">
 </head>
 <body>
 <header>
@@ -29,8 +29,8 @@ function showErr(e) {
 window.addEventListener("error", e => showErr(e));
 window.addEventListener("unhandledrejection", e => showErr({ message: (e.reason && e.reason.message) || String(e.reason) }));
 </script>
-<script src="bank.js?v=20261105"></script>
-<script src="common.js?v=20261105"></script>
+<script src="bank.js?v=20261105c"></script>
+<script src="common.js?v=20261105c"></script>
 <script>
 let ME = store("bp_me");           // {code, pin}
 let RUN = store("bp_run");         // 進行中的練習（重新整理也不會中斷計時）
@@ -89,21 +89,28 @@ async function showHome(fresh) {
 function renderHome(r, stale) {
 
   const codes = r.task ? r.task.codes : [];
-  const doneSet = new Set(r.doneToday);
+  const doneSet = new Set(r.doneToday), flow = masterFlow(r.mlogs || [], flowLocal());
+  /* 今日任務的狀態：老師按「通過」才打勾；交出還沒批改＝等老師；老師按「再修」＝要修改 */
+  const todayLog = c => (r.todayLogs || []).filter(x => x.drill === c).pop();
+  const taskState = c => { const l = todayLog(c);
+    if (!l) return doneSet.has(c) ? "wait" : "";
+    return l.status === "通過" ? "done" : l.status === "再修" ? "redo" : "wait"; };
   const taskHtml = codes.length ? `<div class="tasks">${codes.map(c => {
-      const d = drillOf(c), done = doneSet.has(c);
+      const d = drillOf(c), ts = taskState(c), done = ts === "done";
       return `<div class="task ${done ? "done" : ""}"><div class="row" style="flex-wrap:nowrap">
-        <span class="check">${done ? "✓" : ""}</span>
-        <div><div class="t">${esc(d.name)}</div><div class="s">${tgtText(d)}${(d.type !== "drill" && r.task.year) ? `｜${r.task.year} 年題目` : ""}</div></div></div>
-        <button class="${done ? "" : "primary"}" data-go="${c}">${done ? "再練一次" : "開始"}</button></div>`;
+        <span class="check" ${ts === "wait" ? `style="background:#FFE7A8;border-color:#E0A800"` : ts === "redo" ? `style="background:#E53935;border-color:#E53935;color:#fff"` : ""}>${done ? "✓" : ts === "wait" ? "⏳" : ts === "redo" ? "↻" : ""}</span>
+        <div><div class="t">${esc(d.name)}</div><div class="s">${ts === "wait" ? "已交出，等老師批改" : ts === "redo" ? `老師請你修改${(todayLog(c) || {}).comment ? "：" + esc(todayLog(c).comment) : "，修好再交一次"}` : ts === "done" ? "老師已通過" : tgtText(d)}${(d.type !== "drill" && r.task.year) ? `｜${r.task.year} 年題目` : ""}</div></div></div>
+        <button class="${done || ts === "wait" ? "" : "primary"}" data-go="${c}">${done ? "再練一次" : ts === "wait" ? "再練一次" : ts === "redo" ? "修改後再交" : "開始"}</button></div>`;
     }).join("")}</div>
     ${r.task.note ? `<div class="comment"><b>老師備註：</b>${esc(r.task.note)}</div>` : ""}
-    <p class="muted small">今天完成 ${codes.filter(c => doneSet.has(c)).length} / ${codes.length} 項</p>`
+    <p class="muted small">今天交出 ${codes.filter(c => taskState(c)).length} / ${codes.length} 項・老師通過 ${codes.filter(c => taskState(c) === "done").length} 項</p>`
     : `<p class="muted">老師今天還沒有指派任務，可以從下面自選練習。</p>`;
 
   app.innerHTML = `
     ${RUN ? `<div class="card" style="border-color:var(--main)"><b>你有一個練習還沒結束：</b>${esc(drillOf(RUN.code).name)}
       <p><button class="primary" id="resume">回到練習</button> <button id="drop">放棄這次</button></p></div>` : ""}
+    <div class="card" id="flowCard"><div class="row" style="justify-content:space-between"><h2 style="margin:0">母片養成進度</h2><a class="btn" href="color.html" style="text-decoration:none">配色與母片設計 →</a></div>
+      <div style="margin-top:8px">${flowBar(flow, "")}</div></div>
     <div class="homegrid" id="homeMark"><div>
     <div class="card"><h2>今日任務｜${r.today}</h2>${taskHtml}</div>
     <div class="card"><h2>老師最新評語</h2>${r.comments.length ? r.comments.map(c =>
@@ -126,6 +133,10 @@ function renderHome(r, stale) {
       `<button data-go="${d.code}"><b>${esc(d.name)}</b><div class="muted small">${tgtText(d)}</div></button>`).join("")}</div></div>
     </div></div>`;
 
+  $$("#flowCard [data-sk]").forEach(b => b.onclick = () => { const k = b.dataset.sk;
+    if (k[0] !== "D") return location.href = "color.html#" + k;
+    if (RUN && !confirm("你有一個練習還沒結束，要放棄它並開始新的嗎？")) return;
+    beginPractice(k, ""); });
   $$("[data-route]").forEach(b => b.onclick = e => { e.preventDefault();
     if (RUN && !confirm("你有一個練習還沒結束，要放棄它並開始新的嗎？")) return;
     beginPractice(b.dataset.route, ""); });
@@ -182,16 +193,20 @@ const PH = () => ((RUN && RUN.order) || MOCK_PHASES.map(p => p.key)).map(k => MO
 /* 從零重建母片：要等老師確認過試做母片（D00 通過）才能開始 */
 async function checkApproved() {
   const btn = $("#startBtn"), box = $("#lockBox"); if (!btn) return;
-  const ok = L => (L || []).some(l => l.drill === "D00" && l.status === "通過");
-  const cached = (store("bp_progress") || {}).logs;
-  if (ok(cached)) return;
+  const flowOf = L => masterFlow(L, flowLocal());
+  const cached = (store("bp_home") || {}).mlogs;
+  if (cached && flowOf(cached).approved) return;           // 上次已通過：先讓他開始，不用等
   btn.disabled = true; box.innerHTML = `<p class="muted small">確認老師是否已通過你的試做母片…</p>`;
   const r = await api("progress", ME);
-  if (r.ok) { try { store("bp_progress", r); } catch (e) {} }
   if (!$("#lockBox")) return;
-  if (r.ok && ok(r.logs)) { btn.disabled = false; box.innerHTML = ""; return; }
-  box.innerHTML = `<div class="comment" style="border-color:var(--warn)">🔒 <b>還不能開始。</b>先完成「試做第一版母片」並上傳，等老師在後台按「通過」後，再寫母片製作清單、練習 30 分鐘內重建。
-    <p><button class="primary" id="goD00">去試做第一版母片</button></p></div>`;
+  const f = r.ok ? flowOf(r.logs) : null;
+  if (f && f.approved) { btn.disabled = false; box.innerHTML = ""; return; }
+  const s4 = f ? f.steps[3] : {};
+  box.innerHTML = `<div class="comment" style="border-color:var(--warn)">🔒 <b>還不能開始。</b>${
+    s4.st === "redo" ? `老師請你修改試做母片，修好再上傳一次，老師按「通過」後才能練重建。${s4.comment ? `<div class="fq">老師評語：${esc(s4.comment)}</div>` : ""}` :
+    s4.st === "wait" ? `你的試做母片已上傳，<b>正在等老師確認</b>。老師按「通過」後，再寫母片製作清單、練習 30 分鐘內重建。` :
+    `先完成「試做第一版母片」並上傳，等老師在後台按「通過」後，再寫母片製作清單、練習 30 分鐘內重建。`}
+    <p><button class="primary" id="goD00">${s4.st === "wait" ? "再看一次試做母片關卡" : "去試做第一版母片"}</button></p></div>`;
   $("#goD00").onclick = () => { RUN = null; unstore("bp_run"); beginPractice("D00", ""); };
 }
 

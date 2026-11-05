@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>配色與母片設計｜商業簡報練習</title>
-<link rel="stylesheet" href="style.css?v=20261105">
+<link rel="stylesheet" href="style.css?v=20261105c">
 <style>
   main { max-width: 1180px; }
   .layout { display: grid; grid-template-columns: 300px 1fr; gap: 14px; align-items: start; }
@@ -50,16 +50,6 @@
   .ref { background: #fff8e6; border: 1px solid #f2d48a; border-radius: 10px; padding: 10px 14px; margin-bottom: 12px; font-size: 14px; }
   .rtbl input { min-width: 110px; padding: 5px 7px; font-size: 13px; } .rtbl td { padding: 4px 3px; } .rtbl td:first-child input { min-width: 170px; }
   .rin.blur { color: transparent; text-shadow: 0 0 8px rgba(0,0,0,.45); background: #f3f4f3; }
-  .stepbar { display: flex; align-items: stretch; gap: 4px; flex-wrap: wrap; background: var(--card); border: 1px solid var(--cardbd); border-radius: 14px; padding: 8px; backdrop-filter: blur(var(--blur)); }
-  .sb { display: flex; align-items: center; gap: 8px; border: 0; background: transparent; padding: 6px 10px; border-radius: 10px; text-align: left; white-space: normal; }
-  .sb .sn { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; background: #e7ecf3; color: var(--muted); font-weight: 700; flex: none; font-size: 13px; }
-  .sb .st { font-size: 14px; line-height: 1.3; } .sb small { display: block; color: var(--muted); font-size: 11px; }
-  .sb.ok .sn { background: var(--good); color: #fff; } .sb.ok .st { color: var(--good); }
-  .sb.here { background: var(--main-2); box-shadow: inset 0 0 0 2px var(--main); } .sb.here .st { font-weight: 700; }
-  .sb.now .sn { background: var(--main); color: #fff; }
-  .sb.lock { opacity: .55; } .sb.lock .sn { background: transparent; font-size: 14px; }
-  .nx { font-style: normal; font-size: 11px; background: var(--accent); color: #fff; border-radius: 99px; padding: 1px 7px; margin-left: 6px; vertical-align: 2px; }
-  .sarr { align-self: center; color: #b8c2cf; font-size: 20px; }
   #steps { margin-bottom: 12px; }
   .ithumb { width: 64px; height: 48px; object-fit: cover; border-radius: 8px; border: 2px solid transparent; cursor: pointer; }
   .ithumb.on { border-color: var(--main); }
@@ -93,8 +83,8 @@ function showErr(e) {
 window.addEventListener("error", e => showErr(e));
 window.addEventListener("unhandledrejection", e => showErr({ message: (e.reason && e.reason.message) || String(e.reason) }));
 </script>
-<script src="bank.js?v=20261105"></script>
-<script src="common.js?v=20261105"></script>
+<script src="bank.js?v=20261105c"></script>
+<script src="common.js?v=20261105c"></script>
 <script>
 /* ---------------- 色彩工具 ---------------- */
 const hex2rgb = h => { h = h.replace("#", ""); if (h.length === 3) h = h.split("").map(x => x + x).join(""); return [0, 2, 4].map(i => parseInt(h.substr(i, 2), 16)); };
@@ -521,7 +511,7 @@ let wheelH; function wheelLater() { cancelAnimationFrame(wheelH); wheelH = reque
 async function loadProg() {
   if (!ME) return;
   const r = await api("progress", ME).catch(() => null);
-  if (r && r.ok) { PROG = r.logs; store("bp_prog", r.logs.filter(l => ["S01", "S02", "D00", "D01"].includes(l.drill)).map(l => ({ drill: l.drill, seconds: l.seconds, status: l.status }))); }
+  if (r && r.ok) { PROG = r.logs; store("bp_prog", r.logs.filter(l => ["S01", "S02", "S03", "D00", "D01"].includes(l.drill)).map(l => ({ drill: l.drill, seconds: l.seconds, status: l.status, comment: l.comment }))); }
 }
 
 function milestones() {
@@ -667,7 +657,10 @@ let RBLUR = false;
 function recipe() {
   const saveR = () => store("bp_recipe", RC);
   if (!approved()) {
+    const f = FLOW(), s4 = f.steps[3];
     $("#body").innerHTML = `<div class="card"><h2>🔒 母片製作清單：老師確認後才能寫</h2>
+      ${s4.st === "redo" ? `<div class="fmsg redo">↻ <b>老師請你修改試做母片</b>${s4.comment ? `<div class="fq">老師評語：${esc(s4.comment)}</div>` : ""}</div>` :
+        s4.st === "wait" ? `<div class="fmsg wait">⏳ <b>你的試做母片已上傳，正在等老師確認。</b></div>` : ""}
       <p>順序是：照風格卡<b>試做第一版母片</b>（不限時間）→ 上傳給老師 → <b>老師在後台按「通過」</b>後，再把最後確定的做法一項一項寫進這份清單，接著練習 30 分鐘內重建。</p>
       <p class="muted small">老師按了「通過」之後，回到這頁重新整理就會開放。</p>
       <p><a class="btn primary" href="index.html#go=D00" style="text-decoration:none;color:#fff">去試做第一版母片</a></p></div>`;
@@ -694,7 +687,7 @@ function recipe() {
     const txt = RSECS.map(sec => sec + "\n" + RC.filter(r => r.sec === sec && Object.values(r).join("").replace(sec, "").trim())
       .map(r => "・" + RCOLS.map(([k]) => r[k]).filter(Boolean).join("｜")).join("\n")).join("\n\n");
     const r = await api("submit", { ...ME, type: "style", drillCode: "S03", drillName: "母片製作清單", seconds: 0, answer: txt }).catch(() => ({ ok: false, msg: "連線失敗" }));
-    toast(r.ok ? "已交給老師" : r.msg, !r.ok);
+    toast(r.ok ? "已交給老師" : r.msg, !r.ok); if (r.ok) { PROG = null; loadProg().then(stepper); }
   };
 }
 
@@ -784,29 +777,15 @@ function insp() {
 }
 
 /* ---------------- 母片養成步驟（每一頁最上方） ---------------- */
-function approved() { return (PROG || store("bp_prog") || []).some(l => l.drill === "D00" && l.status === "通過"); }
-function stepState() {
-  const L = PROG || store("bp_prog") || [];
-  const d00 = L.filter(l => l.drill === "D00"), last00 = d00[d00.length - 1];
-  const d01 = L.filter(l => l.drill === "D01"), last3 = d01.slice(-3);
-  const ok5 = approved();
-  const rcDone = (RC || []).filter(r => r.sec && !r.sec.startsWith("0.") && (r.item || "").trim() && r.item !== "畫面外色票圈").length >= 3;
-  return [
-    { k: "insp", n: "上傳靈感圖", ok: INSP.length > 0 || L.some(l => l.drill === "S01") },
-    { k: "insp", n: "吸色定配色", ok: !!ST.picked },
-    { k: "style", n: "形狀・字型・命名", ok: !!(ST.name && SAVED.some(s => s.shape)) },
-    { k: "D00", n: "試做第一版母片", ok: d00.length > 0, sub: "不限時間，做完上傳" },
-    { k: "D00", n: "老師確認通過", ok: ok5, sub: last00 ? (last00.status === "再修" ? "老師請你再修" : last00.status === "通過" ? "" : "等老師看") : "" },
-    { k: "recipe", n: "寫母片製作清單", ok: ok5 && rcDone, lock: !ok5 },
-    { k: "D01", n: "30 分鐘內重建 ×3", ok: ok5 && last3.length === 3 && last3.every(l => l.seconds <= 1800), lock: !ok5,
-      sub: ok5 && last3.length ? last3.map(l => fmtSec(l.seconds)).join("、") : "" }
-  ];
+function FLOW() {
+  const loc = { insp: INSP.length > 0, picked: !!ST.picked, style: !!(ST.name && SAVED.some(x => x.shape)),
+    recipe: (RC || []).filter(r => r.sec && !r.sec.startsWith("0.") && (r.item || "").trim() && r.item !== "畫面外色票圈").length >= 3 };
+  return masterFlow(PROG || store("bp_prog") || [], loc);
 }
+function approved() { return FLOW().approved; }
 function stepper() {
-  const S = stepState(), next = S.findIndex(s => !s.ok);
-  $("#steps").innerHTML = `<div class="stepbar">${S.map((s, i) => `<button class="sb ${s.ok ? "ok" : ""} ${i === next ? "now" : ""} ${s.k === TAB ? "here" : ""} ${s.lock ? "lock" : ""}" data-sk="${s.k}">
-    <span class="sn">${s.ok ? "✓" : s.lock ? "🔒" : i + 1}</span><span class="st">${s.n}${i === next ? `<em class="nx">下一步</em>` : ""}${s.sub ? `<small>${esc(s.sub)}</small>` : ""}</span></button>`).join('<span class="sarr">›</span>')}</div>
-    <p class="muted small" style="margin:6px 2px 0">藍框＝你現在所在的頁面　｜　🔒＝老師確認通過後才開放　｜　不知道怎麼配色？先看「色彩教學」或用「色環配色」找方向。</p>`;
+  $("#steps").innerHTML = flowBar(FLOW(), TAB) +
+    `<p class="muted small" style="margin:6px 2px 0">✓ 完成　⏳ 等老師確認　↻ 老師請你修改　🔒 老師通過後才開放　｜　藍框＝你現在所在的頁面</p>`;
   $$("[data-sk]").forEach(b => b.onclick = () => { const k = b.dataset.sk; if (k[0] === "D") return location.href = "index.html#go=" + k; TAB = k; render(); window.scrollTo(0, 0); });
 }
 
@@ -835,7 +814,7 @@ function loadLocal() {
   await cloudLoad();                                        // 背景向雲端拿最新
   const after = CLOUD_KEYS.map(k => localStorage.getItem(k)).join("|");
   if (after !== before && !touched) { loadLocal(); render(); }
-  loadProg().then(() => stepper());
+  loadProg().then(() => { if (TAB === "recipe") render(); else stepper(); });
 })();
 
 </script>
