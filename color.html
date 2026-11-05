@@ -50,12 +50,31 @@
   .ref { background: #fff8e6; border: 1px solid #f2d48a; border-radius: 10px; padding: 10px 14px; margin-bottom: 12px; font-size: 14px; }
   .rtbl input { min-width: 110px; padding: 5px 7px; font-size: 13px; } .rtbl td { padding: 4px 3px; } .rtbl td:first-child input { min-width: 170px; }
   .rin.blur { color: transparent; text-shadow: 0 0 8px rgba(0,0,0,.45); background: #f3f4f3; }
+  .stepbar { display: flex; align-items: stretch; gap: 4px; flex-wrap: wrap; background: var(--card); border: 1px solid var(--cardbd); border-radius: 14px; padding: 8px; backdrop-filter: blur(var(--blur)); }
+  .sb { display: flex; align-items: center; gap: 8px; border: 0; background: transparent; padding: 6px 10px; border-radius: 10px; text-align: left; white-space: normal; }
+  .sb .sn { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; background: #e7ecf3; color: var(--muted); font-weight: 700; flex: none; font-size: 13px; }
+  .sb .st { font-size: 14px; line-height: 1.3; } .sb small { display: block; color: var(--muted); font-size: 11px; }
+  .sb.ok .sn { background: var(--good); color: #fff; } .sb.ok .st { color: var(--good); }
+  .sb.now { background: var(--main-2); } .sb.now .sn { background: var(--main); color: #fff; } .sb.now .st { font-weight: 700; }
+  .sarr { align-self: center; color: #b8c2cf; font-size: 20px; }
+  #steps { margin-bottom: 12px; }
+  .ithumb { width: 64px; height: 48px; object-fit: cover; border-radius: 8px; border: 2px solid transparent; cursor: pointer; }
+  .ithumb.on { border-color: var(--main); }
+  .pickwrap { position: relative; } .pickwrap canvas { width: 100%; height: auto; border-radius: 10px; cursor: crosshair; display: block; }
+  #loupe { display: none; position: absolute; pointer-events: none; padding: 6px 10px; border-radius: 8px; font-size: 12px; font-weight: 700; border: 2px solid #fff; box-shadow: 0 2px 8px rgba(0,0,0,.3); }
+  .domsw { width: 40px; height: 40px; border-radius: 8px; border: 1px solid #ddd; padding: 0; }
+  .empty { border: 2px dashed var(--line); border-radius: 12px; padding: 50px 10px; text-align: center; color: var(--muted); margin-top: 10px; }
+  .slots { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 6px; }
+  .slot { display: grid; grid-template-columns: 30px 1fr; grid-template-rows: auto auto; column-gap: 8px; text-align: left; padding: 6px 8px; white-space: normal; }
+  .slot i { grid-row: span 2; width: 30px; height: 30px; border-radius: 7px; border: 1px solid #ddd; } .slot b { font-size: 13px; } .slot span { font-size: 11px; color: var(--muted); }
+  .slot.on { border: 2px solid var(--main); background: var(--main-2); } .slot.add { display: block; text-align: center; color: var(--main); }
   .spec { border: 1px dashed var(--main); border-radius: 10px; padding: 10px 12px; background: #fbfdfc; } .spec ul { padding-left: 18px; margin: 6px 0 0; }
 </style>
 </head>
 <body>
 <header><h1>配色與母片設計</h1><div class="row"><a class="btn" href="index.html" style="background:rgba(255,255,255,.15);color:#fff;border:0;text-decoration:none">回首頁</a></div></header>
 <main>
+  <div id="steps"></div>
   <div class="tabs" id="tabs"></div>
   <div id="body"></div>
 </main>
@@ -108,7 +127,7 @@ const colorName = (i, p = P) => i === 0 ? "主色" : i === p.acc ? "強調色" :
 const palAll = p => { p = normPal(p); return [p.bg, p.text, p.text2, ...p.colors]; };
 let ST = store("bp_style") || { name: "", shape: "slant", font: "jh" };
 let SAVED = store("bp_palettes") || [];
-let TAB = "learn";
+let TAB = "insp";
 let PROG = null;           // 選手練習紀錄（母片養成進度用）
 const ME = store("bp_me");
 const derived = (p = P) => { p = normPal(p); return { ...p, soft: mix(p.main, p.bg, .88), ink: p.text, gray: p.text2 }; };
@@ -336,9 +355,7 @@ function learn() {
     <p>文字和背景的對比值：<b>內文至少 4.5</b>，大標題、小標題（粗體大字）至少 3。不夠的話評審在投影機上會看不清楚。</p>
     ${rows.map(([bg, fg, lab]) => { const r = contrast(bg, fg); return `<div class="textdemo" style="background:${bg};color:${fg};border:1px solid #e3e3e3">
       <span>${lab}：這是內文範例 Text 2026</span><b>${r.toFixed(1)} ${r >= 4.5 ? "✓" : r >= 3 ? "△ 只適合大標、小標" : "✗ 只用在色塊"}</b></div>`; }).join("")}</div>
-  <div class="card"><h2>8. 配色方案參考（點一下套用）</h2><p class="muted small">這些只是起點，套用後請依題目與自己的喜好調整，建立自己的配色方案。</p><div class="presets">${PRESETS.map((p, i) =>
-    `<button class="preset" data-p="${i}">${swatches(palAll(p), true)}<b>${p.n}</b></button>`).join("")}</div></div>
-  <div class="card"><h2>9. 比賽現場提醒</h2><ol>
+  <div class="card"><h2>8. 比賽現場提醒</h2><ol>
     <li>比賽不能上網，<b>只要背熟最後決定拿上場的那一組母片配色</b>（背景與文字色＋物件色彩的色碼）。</li>
     <li>進場第一件事：開「空白簡報」，不用任何內建佈景主題或範本；到設計 → 變化 → 色彩 → 自訂色彩，把色碼輸入並存檔。</li>
     <li>不論從佈景主題色彩挑、或用滴管從色票圈吸，<b>所有顏色都要在自己的配色方案裡</b>，不要臨時加入方案外的顏色。同一色的較淺、較深變化可以用，但要有規則、全篇一致。</li>
@@ -350,7 +367,7 @@ function learn() {
         <text x="330" y="31" font-size="12" text-anchor="middle" fill="#555">← 畫面外的色票圈</text></svg></div></li>
     <li>平常練習時，用「滴管」從傳單、得獎作品吸色，記錄下喜歡的組合。</li>
     <li>依題目的產業調整：健身、科技、餐飲給人的感覺不同，色彩要跟主題一致。</li></ol></div>`;
-  $$("[data-p]").forEach(b => b.onclick = () => { const p = PRESETS[b.dataset.p]; P = normPal(p); savePal(); WH = null; store("bp_wheel2", null); TAB = "style"; render(); });
+
 }
 
 function checks(c) {
@@ -418,7 +435,7 @@ function wheel() {
   const cur = WH.pts[WH.sel], hexes = wHexes();
   const tmp = derived({ ...P, colors: hexes, acc: WH.acc });
   $("#body").innerHTML = `<div class="layout">
-    <div class="card"><h2>色環</h2>
+    <div><div class="card"><h2>色環</h2>
       <label style="margin-top:0">物件色彩要幾色？</label>
       <div class="row">${[3, 4, 5].map(n => `<button data-cnt="${n}" class="${WH.pts.length === n ? "primary" : ""}">${n} 色</button>`).join("")}</div>
       <div class="wheel" id="wheel" style="width:${R * 2}px;height:${R * 2}px;margin-top:12px">
@@ -433,6 +450,9 @@ function wheel() {
       <label>配色規則</label>
       <div class="modes">${MODES.map(m => `<button data-m="${m.k}" class="${WH.mode === m.k ? "on" : ""}"><b>${m.n}</b><div class="muted small">${m.d}</div></button>`).join("")}</div>
     </div>
+    <div class="card"><h2>配色方案參考</h2><p class="muted small">點一下就帶進色環，再依題目與自己的喜好調整。這些只是起點。</p>
+      <div class="presets" style="grid-template-columns:1fr">${PRESETS.map((p, i) =>
+        `<button class="preset" data-p="${i}">${swatches(palAll(p), true)}<b>${p.n}</b></button>`).join("")}</div></div></div>
     <div>
       <div class="card"><h2>這組配色</h2>
         <h3 style="margin-top:0">物件色彩（${hexes.length} 色）　<span class="muted small">點選哪一個當強調色</span></h3>
@@ -459,13 +479,17 @@ function wheel() {
   el.onpointerup = el.onpointerleave = () => { if (drag !== null) { drag = null; wheel(); } };
   $("#lv").oninput = e => { cur.l = e.target.value / 100; store("bp_wheel2", WH); wheelLater(); };
   $("#lv").onchange = () => wheel();
+  $$("[data-p]").forEach(b => b.onclick = () => { const p = normPal(PRESETS[b.dataset.p]);
+    P = { ...P, bg: p.bg, text: p.text, text2: p.text2, colors: p.colors, acc: p.acc }; savePal();
+    WH = { mode: "free", sel: 0, acc: p.acc, pts: p.colors.map(toPt) }; store("bp_wheel2", WH);
+    wheel(); window.scrollTo({ top: 0, behavior: "smooth" }); toast("已套用：" + PRESETS[b.dataset.p].n); });
   $$("[data-cnt]").forEach(b => b.onclick = () => { setCount(+b.dataset.cnt); if (WH.mode === "mono" || WH.mode === "free") {} store("bp_wheel2", WH); wheel(); });
   $$("[data-m]").forEach(b => b.onclick = () => { WH.mode = b.dataset.m; WH.sel = 0; store("bp_wheel2", WH); wheel(); });
   $$("[name=wacc]").forEach(r => r.onchange = () => { WH.acc = +r.value; store("bp_wheel2", WH); wheel(); });
   $$("[data-n]").forEach(x => x.onchange = () => { P[x.dataset.n] = x.value.toUpperCase(); savePal(); wheel(); });
   $$("[data-nh]").forEach(x => x.onchange = () => { let v = x.value.trim(); if (!v.startsWith("#")) v = "#" + v;
     if (/^#[0-9a-fA-F]{6}$/.test(v)) { P[x.dataset.nh] = v.toUpperCase(); savePal(); wheel(); } else toast("色碼格式：#RRGGBB", true); });
-  $("#toStyle").onclick = () => { P = { ...P, colors: wHexes(), acc: WH.acc }; savePal(); TAB = "style"; render(); toast("已套用"); };
+  $("#toStyle").onclick = () => { P = { ...P, colors: wHexes(), acc: WH.acc }; savePal(); TAB = "style"; render(); window.scrollTo(0, 0); toast("已套用"); };
   $("#saveW").onclick = () => { const name = prompt("色票名稱", "色環配色 " + (SAVED.length + 1)); if (name === null) return;
     SAVED.push({ name, ...normPal({ ...P, colors: wHexes(), acc: WH.acc }), at: new Date().toLocaleDateString("sv-SE") }); store("bp_palettes", SAVED); toast("已存到我的色票"); };
 }
@@ -480,9 +504,9 @@ let wheelH; function wheelLater() { cancelAnimationFrame(wheelH); wheelH = reque
 
 /* ---------------- 母片風格 ---------------- */
 async function loadProg() {
-  if (!ME || PROG) return;
+  if (!ME) return;
   const r = await api("progress", ME).catch(() => null);
-  PROG = r && r.ok ? r.logs : [];
+  if (r && r.ok) { PROG = r.logs; store("bp_prog", r.logs.filter(l => ["S01", "S02", "D01"].includes(l.drill)).map(l => ({ drill: l.drill, seconds: l.seconds, status: l.status }))); }
 }
 
 function milestones() {
@@ -540,7 +564,7 @@ function styleTab() {
         <div class="spec"><b>風格規格</b><div class="muted small">色碼與字型照這裡設定；版面設計請依自己的巧思，不必照預覽做。</div><ul class="small" id="specBox">${specHtml(c, f)}</ul></div></div>
       ${c.colors.length >= 4 ? `<p class="muted small">物件色 4 色以上時，預覽會用「每章一色」呈現：目錄編號、分隔頁、導覽列換成章節色。</p>` : ""}</div>
     </div></div>
-    <div class="card"><h2>母片養成進度</h2>${milestones()}</div>`;
+`;
 
   ["bg", "text", "text2"].forEach(k => {
     $("#" + k).oninput = e => { P[k] = e.target.value.toUpperCase(); savePal(); $("#" + k + "H").value = P[k]; repaint(); };
@@ -652,25 +676,139 @@ function recipe() {
   };
 }
 
+/* ---------------- 靈感吸色 ---------------- */
+let INSP = store("bp_insp") || [];           // 靈感圖（縮小後的 dataURL），只存在這台電腦
+let INSP_I = 0, SLOT = "c0";
+const SLOT_NAME = k => k === "bg" ? "背景色" : k === "text" ? "主文字色" : k === "text2" ? "次要文字色" : colorName(+k.slice(1));
+const slotGet = k => k[0] === "c" ? P.colors[+k.slice(1)] : P[k];
+function slotSet(k, hex) { if (k[0] === "c") P.colors[+k.slice(1)] = hex; else P[k] = hex; savePal(); }
+function slotOrder() { return [...P.colors.map((_, i) => "c" + i), "bg", "text", "text2"]; }
+function shrink(file, max = 900) {
+  return new Promise(ok => { const r = new FileReader(); r.onload = () => { const im = new Image(); im.onload = () => {
+    const s = Math.min(1, max / Math.max(im.width, im.height)); const cv = document.createElement("canvas");
+    cv.width = im.width * s; cv.height = im.height * s; cv.getContext("2d").drawImage(im, 0, 0, cv.width, cv.height);
+    ok(cv.toDataURL("image/jpeg", .82)); }; im.src = r.result; }; r.readAsDataURL(file); });
+}
+function dominant(cv, n = 10) {
+  const d = cv.getContext("2d").getImageData(0, 0, cv.width, cv.height).data, cnt = {};
+  const step = Math.max(1, Math.floor(d.length / 4 / 40000)) * 4;
+  for (let i = 0; i < d.length; i += step) { const k = (d[i] >> 4) + "," + (d[i + 1] >> 4) + "," + (d[i + 2] >> 4); cnt[k] = (cnt[k] || 0) + 1; }
+  const out = [];
+  for (const [k] of Object.entries(cnt).sort((a, b) => b[1] - a[1])) {
+    const rgb = k.split(",").map(v => +v * 16 + 8);
+    if (out.every(o => Math.hypot(...o.map((v, i) => v - rgb[i])) > 48)) out.push(rgb);
+    if (out.length >= n) break;
+  }
+  return out.map(rgb2hex);
+}
+function insp() {
+  const c = derived(), img = INSP[INSP_I];
+  $("#body").innerHTML = `<div class="ref">💡 先找 1～3 張你喜歡的傳單、海報或得獎作品，拍照上傳。接著<b>直接在圖片上點，就能吸出那個顏色</b>，組成你自己的配色方案。圖片只是靈感來源，不是要照抄版面。</div>
+  <div class="layout" style="grid-template-columns:1.25fr 1fr">
+    <div class="card"><h2>① 上傳靈感圖</h2>
+      <div class="row"><label class="btn" style="margin:0;color:#fff;background:var(--main);border-color:var(--main);cursor:pointer;display:inline-block">＋ 選擇圖片<input type="file" id="inspFile" accept="image/*" style="display:none"></label>
+        ${INSP.map((u, i) => `<img src="${u}" data-ii="${i}" class="ithumb ${i === INSP_I ? "on" : ""}">`).join("")}</div>
+      ${img ? `<p class="muted small" style="margin:10px 0 4px">② 點圖片上的任何地方 → 顏色填入右邊選中的格子「<b>${SLOT_NAME(SLOT)}</b>」</p>
+        <div class="pickwrap"><canvas id="ic"></canvas><div id="loupe"></div></div>
+        <h3>圖片的主要顏色 <span class="muted small">（點一下也能填入）</span></h3><div class="row" id="dom"></div>
+        ${window.EyeDropper ? `<p><button id="eyed">🎯 吸取螢幕上任何地方的顏色</button></p>` : ""}
+        <label>這張圖你喜歡它哪裡？（顏色？版面？形狀？）</label><textarea id="inspNote" style="min-height:56px">${esc((store("bp_insp_note") || {})[INSP_I] || "")}</textarea>
+        <p class="row"><button id="inspSend">送給老師看</button><button id="inspDel">移除這張</button></p>`
+      : `<div class="empty">還沒有靈感圖。手機也可以直接拍照上傳。</div>`}
+    </div>
+    <div><div class="card"><h2>② 吸色組出配色方案</h2>
+      <p class="muted small" style="margin-top:0">先點一個格子，再到左邊圖片上點顏色。</p>
+      <h3>物件色彩（${P.colors.length} 色）</h3>
+      <div class="slots">${P.colors.map((h, i) => `<button class="slot ${SLOT === "c" + i ? "on" : ""}" data-slot="c${i}"><i style="background:${h}"></i><b>${colorName(i)}</b><span>${h}</span></button>`).join("")}
+        ${P.colors.length < 6 ? `<button class="slot add" id="addSlot">＋ 加一色</button>` : ""}</div>
+      <p class="small" style="margin:6px 0">強調色是：<select id="accSel" style="width:auto">${P.colors.map((_, i) => `<option value="${i}" ${i === P.acc ? "selected" : ""}>${i === 0 ? "主色" : "色彩 " + (i + 1)}</option>`).join("")}</select>
+        ${P.colors.length > 3 ? `<button class="small" id="delSlot" style="padding:2px 8px;margin-left:6px">刪掉最後一色</button>` : ""}</p>
+      <h3>背景與文字色</h3>
+      <div class="slots">${["bg", "text", "text2"].map(k => `<button class="slot ${SLOT === k ? "on" : ""}" data-slot="${k}"><i style="background:${P[k]}"></i><b>${SLOT_NAME(k)}</b><span>${P[k]}</span></button>`).join("")}</div>
+      <h3>可讀性檢查</h3><div id="ckBox">${checks(c)}</div></div>
+      <div class="card"><h2>預覽 <span class="muted small">（只是參考）</span></h2><div class="slides" id="slideBox">${["cover", "content"].map(t => `<div class="slide">${slide(t, c)}</div>`).join("")}</div>
+      <p><button class="primary big" id="nextStep" style="width:100%">確定這組顏色，下一步：形狀與字型 →</button></p></div></div>
+  </div>`;
+
+  $("#inspFile").onchange = async e => { const f = e.target.files[0]; if (!f) return;
+    const u = await shrink(f); INSP.push(u); if (INSP.length > 3) INSP.shift(); INSP_I = INSP.length - 1;
+    try { store("bp_insp", INSP); } catch (er) {} insp(); toast("已載入，點圖片就能吸色"); };
+  $$("[data-ii]").forEach(t => t.onclick = () => { INSP_I = +t.dataset.ii; insp(); });
+  $$("[data-slot]").forEach(b => b.onclick = () => { SLOT = b.dataset.slot; insp(); });
+  if ($("#addSlot")) $("#addSlot").onclick = () => { P.colors.push(vivid(P.colors[0], 72 * P.colors.length)); savePal(); SLOT = "c" + (P.colors.length - 1); insp(); };
+  if ($("#delSlot")) $("#delSlot").onclick = () => { P.colors.pop(); if (P.acc >= P.colors.length) P.acc = P.colors.length - 1; savePal(); SLOT = "c0"; insp(); };
+  $("#accSel").onchange = e => { P.acc = +e.target.value; savePal(); insp(); };
+  $("#nextStep").onclick = () => { ST.picked = true; store("bp_style", ST); TAB = "style"; render(); window.scrollTo(0, 0); toast("配色已套用到母片風格"); };
+  const fill = hex => { slotSet(SLOT, hex.toUpperCase()); const o = slotOrder(); SLOT = o[(o.indexOf(SLOT) + 1) % o.length]; insp(); };
+  if (!img) return;
+  const cv = $("#ic"), ctx = cv.getContext("2d"), im = new Image();
+  im.onload = () => { cv.width = im.width; cv.height = im.height; ctx.drawImage(im, 0, 0);
+    $("#dom").innerHTML = dominant(cv).map(h => `<button class="domsw" data-h="${h}" title="${h}" style="background:${h}"></button>`).join("");
+    $$(".domsw").forEach(b => b.onclick = () => fill(b.dataset.h)); };
+  im.src = img;
+  const at = e => { const r = cv.getBoundingClientRect(); const x = Math.floor((e.clientX - r.left) * cv.width / r.width), y = Math.floor((e.clientY - r.top) * cv.height / r.height);
+    const d = ctx.getImageData(Math.max(0, Math.min(cv.width - 1, x)), Math.max(0, Math.min(cv.height - 1, y)), 1, 1).data; return [rgb2hex([d[0], d[1], d[2]]), e.clientX - r.left, e.clientY - r.top]; };
+  cv.onmousemove = e => { const [h, x, y] = at(e); const L = $("#loupe"); L.style.display = "block"; L.style.left = x + 16 + "px"; L.style.top = y - 46 + "px"; L.style.background = h; L.textContent = h; L.style.color = bestText(h); };
+  cv.onmouseleave = () => $("#loupe").style.display = "none";
+  cv.onclick = e => fill(at(e)[0]);
+  if ($("#eyed")) $("#eyed").onclick = async () => { try { const r = await new EyeDropper().open(); fill(r.sRGBHex); } catch (er) {} };
+  $("#inspNote").oninput = e => { const n = store("bp_insp_note") || {}; n[INSP_I] = e.target.value; store("bp_insp_note", n); };
+  $("#inspDel").onclick = () => { if (!confirm("移除這張靈感圖？")) return; INSP.splice(INSP_I, 1); INSP_I = 0; store("bp_insp", INSP); insp(); };
+  $("#inspSend").onclick = async () => { $("#inspSend").disabled = true; $("#inspSend").textContent = "上傳中…";
+    const r = await api("submit", { ...ME, type: "style", drillCode: "S01", drillName: "母片靈感收集", seconds: 0, reflection: $("#inspNote").value,
+      file: { name: "inspiration.jpg", type: "image/jpeg", data: img.split(",")[1] } });
+    $("#inspSend").disabled = false; $("#inspSend").textContent = "送給老師看";
+    if (r.ok) { PROG = null; store("bp_prog", null); loadProg().then(stepper); } toast(r.ok ? "已送給老師" : r.msg, !r.ok); };
+}
+
+/* ---------------- 母片養成步驟（每一頁最上方） ---------------- */
+function stepState() {
+  const L = PROG || store("bp_prog") || [];
+  const d01 = L.filter(l => l.drill === "D01"), last3 = d01.slice(-3);
+  const rcDone = (RC || []).filter(r => r.sec && !r.sec.startsWith("0.") && (r.item || "").trim() && !(r.item === "畫面外色票圈")).length >= 3;
+  return [
+    { k: "insp", n: "上傳靈感圖", ok: INSP.length > 0 || L.some(l => l.drill === "S01") },
+    { k: "insp", n: "吸色定配色", ok: !!ST.picked },
+    { k: "style", n: "形狀・字型・命名", ok: !!(ST.name && SAVED.some(s => s.shape)) },
+    { k: "style", n: "交給老師確認", ok: L.some(l => l.drill === "S02"), sub: (() => { const s = L.filter(l => l.drill === "S02").pop(); return s ? s.status : ""; })() },
+    { k: "recipe", n: "寫母片製作清單", ok: rcDone },
+    { k: "D01", n: "30 分鐘內重建 ×3", ok: last3.length === 3 && last3.every(l => l.seconds <= 1800), sub: last3.length ? last3.map(l => fmtSec(l.seconds)).join("、") : "" }
+  ];
+}
+function stepper() {
+  const S = stepState(), next = S.findIndex(s => !s.ok);
+  $("#steps").innerHTML = `<div class="stepbar">${S.map((s, i) => `<button class="sb ${s.ok ? "ok" : ""} ${i === next ? "now" : ""}" data-sk="${s.k}">
+    <span class="sn">${s.ok ? "✓" : i + 1}</span><span class="st">${s.n}${s.sub ? `<small>${esc(s.sub)}</small>` : ""}</span></button>`).join('<span class="sarr">›</span>')}</div>
+    ${next >= 0 ? `<p class="muted small" style="margin:6px 2px 0">下一步：<b>${S[next].n}</b>　｜　不知道怎麼配色？先看「色彩教學」或用「色環配色」找方向。</p>` : `<p class="good small" style="margin:6px 2px 0">母片風格已經背起來了，很棒！</p>`}`;
+  $$("[data-sk]").forEach(b => b.onclick = () => { const k = b.dataset.sk; if (k === "D01") return location.href = "index.html#go=D01"; TAB = k; render(); window.scrollTo(0, 0); });
+}
+
 /* ---------------- 畫面 ---------------- */
 function render() {
-  const tabs = [["learn", "① 色彩教學"], ["wheel", "② 色環配色"], ["style", "③ 母片風格"], ["shape", "④ 圖形範例"], ["mine", "⑤ 我的色票"], ["recipe", "⑥ 母片製作清單"]];
+  const tabs = [["insp", "靈感吸色"], ["style", "母片風格"], ["recipe", "母片製作清單"], ["mine", "我的色票"], ["learn", "色彩教學"], ["wheel", "色環配色"], ["shape", "圖形範例"]];
   $("#tabs").innerHTML = tabs.map(([k, n]) => `<button data-t="${k}" class="${TAB === k ? "on" : ""}">${n}</button>`).join("");
   $$("[data-t]").forEach(b => b.onclick = () => { TAB = b.dataset.t; render(); window.scrollTo(0, 0); });
-  ({ learn, wheel, style: styleTab, shape, mine, recipe })[TAB]();
-  if (TAB === "style" && ME && !PROG) loadProg().then(() => TAB === "style" && styleTab());
+  ({ insp, learn, wheel, style: styleTab, shape, mine, recipe })[TAB]();
+  stepper();
 }
-if (["#learn", "#wheel", "#style", "#shape", "#mine", "#recipe"].includes(location.hash)) TAB = location.hash.slice(1);
-(async () => {
-  if (!ME) { location.replace("index.html"); return; }   // 沒登入就回首頁登入
-  $("#body").innerHTML = `<div class="card muted">載入你的色票與風格卡…</div>`;
-  await cloudLoad();
+if (["#insp", "#learn", "#wheel", "#style", "#shape", "#mine", "#recipe"].includes(location.hash)) TAB = location.hash.slice(1);
+function loadLocal() {
   P = normPal(store("bp_palette") || { colors: ["#1F5BD8", "#38BDF8", "#E53935"], acc: 2 });
   ST = store("bp_style") || { name: "", shape: "slant", font: "jh" };
   SAVED = store("bp_palettes") || [];
   RC = store("bp_recipe") || defaultRecipe();
   WH = store("bp_wheel2");
-  render();
+}
+(async () => {
+  if (!ME) { location.replace("index.html"); return; }   // 沒登入就回首頁登入
+  loadLocal(); render();                                    // 先用這台電腦的暫存立刻顯示
+  const before = CLOUD_KEYS.map(k => localStorage.getItem(k)).join("|");
+  let touched = false; const mark = e => { if (e.target.closest && e.target.closest("#body")) touched = true; };
+  document.addEventListener("input", mark); document.addEventListener("click", mark);
+  await cloudLoad();                                        // 背景向雲端拿最新
+  const after = CLOUD_KEYS.map(k => localStorage.getItem(k)).join("|");
+  if (after !== before && !touched) { loadLocal(); render(); }
+  loadProg().then(() => stepper());
 })();
 
 </script>

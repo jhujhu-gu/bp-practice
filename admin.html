@@ -106,6 +106,9 @@ function styleCardBox() {
       ${rows.map(r => `<tr><td class="small">${esc(r.sec)}</td><td>${esc(r.item)}</td><td>${esc(r.shape)}</td><td>${esc(r.color)}</td><td>${esc(r.size)}</td><td>${esc(r.pos)}</td><td>${esc(r.align)}</td></tr>`).join("")}</tbody></table></div>` : ""}</div>`;
 }
 
+/* 雲端檔案連結 → 直接下載連結 */
+function dlUrl(u) { const m = String(u).match(/\/d\/([\w-]+)/) || String(u).match(/[?&]id=([\w-]+)/); return m ? `https://drive.google.com/uc?export=download&id=${m[1]}` : u; }
+
 /* ---------------- 批改 ---------------- */
 function review() {
   const only = store("bp_onlyWait") !== false;
@@ -118,7 +121,8 @@ function review() {
       ${l.answer ? `<b>作答內容</b><pre>${esc(l.answer)}</pre>` : ""}
       ${l.missing.length ? `<b>自評未完成的規格</b><ul>${l.missing.map(m => `<li>${esc(m)}</li>`).join("")}</ul>` : ""}
       ${l.reflection ? `<b>選手自評</b><pre>${esc(l.reflection)}</pre>` : ""}
-      ${l.url ? `<p><a class="btn" href="${esc(l.url)}" target="_blank">開啟上傳的檔案</a></p>` : `<p class="muted small">沒有上傳檔案</p>`}
+      ${l.url ? `<p><a class="btn primary" href="${esc(dlUrl(l.url))}" target="_blank" style="text-decoration:none">⬇ 下載檔案到電腦</a>
+        <span class="muted small">下載後用 PowerPoint 打開，格式和動畫才不會跑掉（不要用 Google 簡報開）</span></p>` : `<p class="muted small">沒有上傳檔案</p>`}
       ${["D01", "M01"].includes(l.drill) ? `<details class="small" style="margin:6px 0"><summary class="muted">批改提示：檢查有沒有用到配色方案以外的顏色</summary>
         <ol style="margin:6px 0">
           <li>打開選手的檔案，對照他的風格卡色碼。</li>

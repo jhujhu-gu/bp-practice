@@ -122,3 +122,7 @@ a.btn.primary { background: var(--main); color: #fff; border-color: var(--main);
 .credit { display: flex; align-items: center; justify-content: center; color: var(--muted); font-size: 13px; padding: 18px 12px 26px; }
 .credit img { width: 40px; height: 40px; border-radius: 50%; box-shadow: 0 1px 4px rgba(0,0,0,.15); }
 .login-hero { display: block; width: 110px; height: 110px; margin: 0 auto 6px; }
+
+.countdown { background: rgba(255,255,255,.2); color: #fff; border-radius: 99px; padding: 4px 14px; font-size: 14px; white-space: nowrap; margin-right: auto; margin-left: 12px; }
+.countdown b { font-size: 20px; margin: 0 2px; color: #FFE08A; }
+@media (max-width: 640px) { header { flex-wrap: wrap; } .countdown { order: 3; margin: 6px 0 0; width: 100%; text-align: center; } }

@@ -27,7 +27,7 @@ let tickH = null;
 const app = $("#app");
 $("#navHome").onclick = () => showHome();
 $("#navProg").onclick = () => showProgress();
-$("#navOut").onclick = () => { unstore("bp_me"); ME = null; showLogin(); };
+$("#navOut").onclick = () => { CLOUD_KEYS.concat(["bp_me", "bp_home", "bp_progress", "bp_prog", "bp_insp", "bp_insp_note"]).forEach(unstore); ME = null; showLogin(); };
 
 function nav(on) { ["#navHome", "#navProg", "#navOut"].forEach(s => $(s).classList.toggle("hidden", !on)); }
 
@@ -51,20 +51,30 @@ function showLogin() {
     <p><button class="primary big" id="go" style="width:100%">進入</button></p></div>`;
   $("#go").onclick = async () => {
     const code = $("#code").value.trim(), pin = $("#pin").value.trim();
-    $("#go").disabled = true;
-    const r = await api("login", { code, pin }).catch(() => ({ ok: false, msg: "連線失敗" }));
-    $("#go").disabled = false;
+    if (!code || !pin) return toast("請輸入代號和 PIN", true);
+    $("#go").disabled = true; $("#go").textContent = "登入中…（第一次可能要等幾秒）";
+    const r = await api("login", { code, pin });
+    $("#go").disabled = false; $("#go").textContent = "進入";
     if (!r.ok) return toast(r.msg, true);
-    ME = { code, pin }; store("bp_me", ME); await start();
+    ME = { code, pin }; store("bp_me", ME); applyCloud(r.data); store("bp_home", r);
+    showHome(r);
   };
 }
 
 /* ---------------- 首頁：今日任務 ---------------- */
-async function showHome() {
+/* 首頁：先顯示上次的畫面，背景向後台拿最新資料（一次請求）再更新 */
+async function showHome(fresh) {
   stopTick(); nav(true);
-  app.innerHTML = `<div class="card"><p class="muted">載入中…</p></div>`;
-  const r = await api("home", ME).catch(() => ({ ok: false, msg: "連線失敗" }));
-  if (!r.ok) { if (r.msg === "請重新登入") return showLogin(); return app.innerHTML = `<div class="card">${esc(r.msg)}</div>`; }
+  if (fresh) return renderHome(fresh);
+  const cached = store("bp_home");
+  if (cached && cached.ok) renderHome(cached, true);
+  else app.innerHTML = `<div class="card"><p class="muted">載入中…（第一次可能要等幾秒）</p></div>`;
+  const r = await api("home", ME);
+  if (!r.ok) { if (r.msg === "請重新登入") return showLogin(); if (!cached) app.innerHTML = `<div class="card">${esc(r.msg)}</div>`; else toast(r.msg, true); return; }
+  applyCloud(r.data); store("bp_home", r);
+  if (!RUN || document.querySelector("#homeMark")) renderHome(r);
+}
+function renderHome(r, stale) {
 
   const codes = r.task ? r.task.codes : [];
   const doneSet = new Set(r.doneToday);
@@ -82,19 +92,19 @@ async function showHome() {
   app.innerHTML = `
     ${RUN ? `<div class="card" style="border-color:var(--main)"><b>你有一個練習還沒結束：</b>${esc(drillOf(RUN.code).name)}
       <p><button class="primary" id="resume">回到練習</button> <button id="drop">放棄這次</button></p></div>` : ""}
-    <div class="homegrid"><div>
+    <div class="homegrid" id="homeMark"><div>
     <div class="card"><h2>今日任務｜${r.today}</h2>${taskHtml}</div>
     <div class="card"><h2>老師最新評語</h2>${r.comments.length ? r.comments.map(c =>
       `<div class="comment">${statusTag(c.status)} <b>${esc(c.name)}</b> <span class="muted small">${c.date}</span><div>${esc(c.comment)}</div></div>`).join("")
       : `<p class="muted">還沒有評語</p>`}</div></div><div>
     <div class="card"><h2>建議練習順序</h2><p class="muted small">先學配色、定出自己的風格，才能從零建出自己的母片。</p>
       <ol class="route">
-        <li><a href="color.html#learn">色彩教學</a><span class="muted small">主色、輔色、強調色與比例</span></li>
-        <li><a href="color.html#wheel">色環配色</a><span class="muted small">用色環挑出自己的色票</span></li>
-        <li><a href="color.html#style">母片風格卡</a><span class="muted small">色票＋形狀語言＋字型</span></li>
+        <li><a href="color.html#insp">靈感吸色</a><span class="muted small">上傳喜歡的作品，直接在圖上吸色組出配色</span></li>
+        <li><a href="color.html#style">母片風格卡</a><span class="muted small">形狀語言＋字型＋命名，交給老師確認</span></li>
+        <li><a href="color.html#recipe">母片製作清單</a><span class="muted small">每個物件的顏色、大小、位置都記下來</span></li>
         <li><a href="#" data-route="D01">從零建好母片</a><span class="muted small">照風格卡在投影片母片從零建立</span></li>
         <li><a href="#" data-route="M01">全真模擬</a><span class="muted small">完整考古題，每份至少 2 次</span></li>
-      </ol></div>
+      </ol><p class="muted small" style="margin:6px 0 0">配色沒方向時，先看 <a href="color.html#learn">色彩教學</a>、<a href="color.html#wheel">色環配色</a>。</p></div>
     <div class="card"><h2>參考資料</h2><p class="muted small">每年都會考的格式要求（日期頁碼、圖片壓縮、存檔等）、常用快捷鍵，以及得獎作品的觀察重點。需要時點開看。</p>
       <p class="row"><a class="btn" href="guide.html#format" style="text-decoration:none">每年必有的格式要求</a><a class="btn" href="guide.html#keys" style="text-decoration:none">常用快捷鍵</a><a class="btn" href="guide.html#award" style="text-decoration:none">得獎作品觀察</a></p></div>
     <div class="card"><h2>配色與母片設計</h2><p class="muted small">色彩教學、色環配色、母片風格、圖形範例。目標：做出你自己的母片風格並背起來。</p>
@@ -293,7 +303,7 @@ function showPractice() {
     const hit = RUN.acc <= d.target * 60;
     let checks = d.pass ? `<h3>對照合格標準：有做到的請打勾</h3><div class="checklist">${d.pass.map(s =>
         `<label><input type="checkbox" data-spec="${esc(s)}">${esc(s)}</label>`).join("")}</div>` : "";
-    if (isRead) checks = `<h3>對照標準規格：你有寫到的請打勾</h3><div class="checklist">${ex.specs.map((s, i) =>
+    if (isRead) checks = `<h3>對照標準規格：你有寫到的請打勾</h3><div class="checklist">${ex.specs.filter(s => !/日期|頁碼|壓縮|三種檔案/.test(s)).map((s, i) =>
         `<label><input type="checkbox" data-spec="${esc(s)}">${esc(s)}</label>`).join("")}</div>
         ${ex.note ? `<p class="muted small">出題觀察：${esc(ex.note)}</p>` : ""}`;
     if (isMock) checks = `<h3>自我檢核：有做到的請打勾</h3>
@@ -307,7 +317,7 @@ function showPractice() {
       ${checks}
       <label>上傳作品（${isMock ? "請上傳簡報檔 .pptx，老師才看得到動畫" : "簡報檔 .pptx 或截圖"}，25MB 以內，可不傳）</label>
       <input type="file" id="file" accept=".pptx,.pdf,.xlsx,image/*">
-      <label>自評：哪裡卡住？下次要改什麼？</label><textarea id="refl" style="min-height:90px" placeholder="例如：SmartArt 改顏色找很久、圖表資料標籤忘了加…"></textarea>
+      <label>自評：哪裡卡住？下次要改什麼？</label><textarea id="refl" style="min-height:90px" placeholder="${isRead ? "例如：客戶分群的依據找很久、成本效益的數字還不知道怎麼呈現、漏看了一項規格…" : "例如：SmartArt 改顏色找很久、圖表資料標籤忘了加…"}"></textarea>
       <p><button class="primary big" id="send">送出</button> <button id="cancel">放棄這次</button></p></div>`;
 
     $("#cancel").onclick = () => { if (confirm("確定放棄？這次紀錄不會保存。")) { RUN = null; unstore("bp_run"); showHome(); } };
@@ -350,9 +360,14 @@ function showPractice() {
 /* ---------------- 我的進度 ---------------- */
 async function showProgress() {
   stopTick(); nav(true);
-  app.innerHTML = `<div class="card"><p class="muted">載入中…</p></div>`;
-  const r = await api("progress", ME).catch(() => ({ ok: false, msg: "連線失敗" }));
-  if (!r.ok) return app.innerHTML = `<div class="card">${esc(r.msg)}</div>`;
+  const cached = store("bp_progress");
+  if (cached) renderProgress(cached); else app.innerHTML = `<div class="card"><p class="muted">載入中…</p></div>`;
+  const r = await api("progress", ME);
+  if (!r.ok) { if (!cached) app.innerHTML = `<div class="card">${esc(r.msg)}</div>`; return; }
+  try { store("bp_progress", r); } catch (e) {}
+  if ($("#progMark")) renderProgress(r);
+}
+function renderProgress(r) {
   const L = r.logs;
   const days = new Set(L.map(l => l.date));
   let streak = 0; for (const d of lastDays(60).reverse()) { if (days.has(d)) streak++; else if (streak || d !== lastDays(1)[0]) break; }
@@ -360,7 +375,7 @@ async function showProgress() {
   const mocks = L.filter(l => l.type === "mock");
 
   app.innerHTML = `
-    <div class="card"><h2>總覽</h2><div class="stats">
+    <div class="card" id="progMark"><h2>總覽</h2><div class="stats">
       <div class="stat"><div class="n">累計練習</div><div class="v">${L.length}</div></div>
       <div class="stat"><div class="n">本週練習</div><div class="v">${wk}</div></div>
       <div class="stat"><div class="n">連續天數</div><div class="v">${streak}</div></div>
@@ -375,7 +390,6 @@ async function showProgress() {
 }
 
 async function start() {
-  if (ME) await cloudLoad();
   if (!ME) return showLogin();
   const m = location.hash.match(/go=(\w+)/);
   if (m && !RUN) { history.replaceState(null, "", location.pathname); return beginPractice(m[1], ""); } if (RUN && RUN.stage !== "pickYear") return showPractice(); showHome(); }

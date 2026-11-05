@@ -5,12 +5,19 @@
 const API_URL = "https://script.google.com/macros/s/AKfycbwawlLleZENS5owIkyjD9cH291PIHpTQWWOftCDza0cgZ9_dzOM55RY9hW6KwJWxwTy/exec";
 
 async function api(action, data = {}) {
-  const res = await fetch(API_URL, {
+  if (!/^https:\/\/script\.google\.com\/macros\/s\/.+\/exec$/.test(API_URL)) return { ok: false, msg: "common.js 的 API_URL 格式不對，結尾要是 /exec" };
+  let res;
+  try { res = await fetch(API_URL, {
     method: "POST",
     headers: { "Content-Type": "text/plain;charset=utf-8" }, // 避免 CORS 預檢
     body: JSON.stringify({ action, ...data })
-  });
-  return res.json();
+  }); } catch (e) { return { ok: false, msg: "連不到後台：請確認部署的「誰可以存取」是「所有人」，或檢查網路" }; }
+  const txt = await res.text();
+  try { return JSON.parse(txt); }
+  catch (e) {
+    const login = /accounts\.google|ServiceLogin|登入/.test(txt);
+    return { ok: false, msg: login ? "後台要求登入 Google：部署的「誰可以存取」請改成「所有人」" : "後台回傳的不是資料（可能尚未授權或部署有誤），請用瀏覽器直接打開 /exec 網址檢查" };
+  }
 }
 
 const $ = (s, el = document) => el.querySelector(s);
@@ -54,6 +61,25 @@ function store(k, v) {
     }, 1200);
   }
 }
+/* 把後台回傳的雲端資料寫進瀏覽器暫存 */
+function applyCloud(data) { if (!data) return; CLOUD_KEYS.forEach(k => { try { if (k in data) localStorage.setItem(k, data[k]); } catch (e) {} }); }
+
+/* ---------- 比賽倒數 ---------- */
+const CONTEST = { name: "115 學年度技藝競賽", start: "2026-12-01", end: "2026-12-04" };
+function countdownHtml() {
+  const today = new Date(new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Taipei" }));
+  const s = new Date(CONTEST.start), e = new Date(CONTEST.end);
+  const d = Math.round((s - today) / 864e5);
+  if (d > 0) return `距離 ${CONTEST.name} 還有 <b>${d}</b> 天`;
+  if (today <= e) return `${CONTEST.name}進行中，加油！`;
+  return `${CONTEST.name}已結束，辛苦了！`;
+}
+document.addEventListener("DOMContentLoaded", () => {
+  const h = document.querySelector("header h1"); if (!h) return;
+  const c = document.createElement("div"); c.className = "countdown"; c.innerHTML = countdownHtml();
+  h.insertAdjacentElement("afterend", c);
+});
+
 /* 登入後先從雲端載入，覆蓋瀏覽器暫存 */
 async function cloudLoad() {
   let me = null; try { me = JSON.parse(localStorage.getItem("bp_me")); } catch (e) {}
